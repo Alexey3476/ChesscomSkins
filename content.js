@@ -184,28 +184,45 @@ function applyEffect(effectName, targetName) {
     ]
     : [".piece", ".promotion-piece"];
   const glowTargetSelector = glowTargets.join(", ");
-  const glowTargetSelected = glowTargets.map((target) => `.selected ${target}`).join(", ");
-  const glowTargetSelectedSelf = glowTargets.map((target) => `${target}.selected`).join(", ");
-  const glowTargetLastMove = glowTargets.map((target) => `.last-move ${target}`).join(", ");
-  const glowTargetMove = glowTargets.map((target) => `.move ${target}`).join(", ");
-  const glowTargetHint = glowTargets.map((target) => `.hint ${target}`).join(", ");
-  const glowTargetHighlight = glowTargets.map((target) => `.highlight ${target}`).join(", ");
-  const glowTargetCheck = glowTargets.map((target) => `.check ${target}`).join(", ");
-  const glowTargetCheckmate = glowTargets.map((target) => `.checkmate ${target}`).join(", ");
-  const glowTargetMate = glowTargets.map((target) => `.mate ${target}`).join(", ");
-  const glowTargetCapture = glowTargets.map((target) => `.capture ${target}`).join(", ");
+  const glowTargetAfter = glowTargets.map((target) => `${target}::after`).join(", ");
+  const glowTargetSelected = glowTargets.map((target) => `.selected ${target}::after`).join(", ");
+  const glowTargetSelectedSelf = glowTargets.map((target) => `${target}.selected::after`).join(", ");
+  const glowTargetLastMove = glowTargets.map((target) => `.last-move ${target}::after`).join(", ");
+  const glowTargetMove = glowTargets.map((target) => `.move ${target}::after`).join(", ");
+  const glowTargetHint = glowTargets.map((target) => `.hint ${target}::after`).join(", ");
+  const glowTargetHighlight = glowTargets.map((target) => `.highlight ${target}::after`).join(", ");
+  const glowTargetCheck = glowTargets.map((target) => `.check ${target}::after`).join(", ");
+  const glowTargetCheckmate = glowTargets.map((target) => `.checkmate ${target}::after`).join(", ");
+  const glowTargetMate = glowTargets.map((target) => `.mate ${target}::after`).join(", ");
+  const glowTargetCapture = glowTargets.map((target) => `.capture ${target}::after`).join(", ");
 
   let css = `
     .piece,
     .promotion-piece {
       position: relative;
-      will-change: transform, filter;
       filter: var(--piece-filter, none);
     }
 
     ${glowTargetSelector} {
       filter: var(--piece-filter, none);
       transition: filter 0.2s ease;
+    }
+
+    ${glowTargetAfter} {
+      content: "";
+      position: absolute;
+      inset: -6%;
+      background-image: inherit;
+      background-repeat: no-repeat;
+      background-size: contain;
+      background-position: center;
+      pointer-events: none;
+      opacity: 0;
+      transform: scale(0.98);
+      transform-origin: center;
+      filter:
+        drop-shadow(0 0 10px var(--ring-color, rgba(255,120,60,0.85)))
+        drop-shadow(0 0 18px var(--ring-color, rgba(255,120,60,0.6)));
     }
 
     .captured .piece,
@@ -216,91 +233,97 @@ function applyEffect(effectName, targetName) {
       filter: var(--piece-filter, none) !important;
     }
 
+    .captured .piece::after,
+    .captured-piece::after,
+    .captured-pieces .piece::after,
+    [class*="captured"] .piece::after {
+      animation: none !important;
+      opacity: 0 !important;
+    }
+
     @keyframes glowPulse {
       0% {
-        filter: var(--piece-filter, none) drop-shadow(0 0 4px var(--ring-color, rgba(255,120,60,0.85)));
+        opacity: 0.35;
+        transform: scale(0.98);
       }
       70% {
-        filter: var(--piece-filter, none)
-          drop-shadow(0 0 10px var(--ring-color, rgba(255,120,60,0.85)))
-          drop-shadow(0 0 18px var(--ring-color, rgba(255,120,60,0.6)));
+        opacity: 0.9;
+        transform: scale(1.05);
       }
       100% {
-        filter: var(--piece-filter, none) drop-shadow(0 0 6px var(--ring-color, rgba(255,120,60,0.85)));
+        opacity: 0.55;
+        transform: scale(1);
       }
     }
 
     @keyframes ringPulse {
       0% {
-        filter: var(--piece-filter, none) drop-shadow(0 0 4px var(--ring-color, rgba(255,120,60,0.8)));
+        opacity: 0.25;
+        transform: scale(0.96);
       }
       70% {
-        filter: var(--piece-filter, none)
-          drop-shadow(0 0 10px var(--ring-color, rgba(255,120,60,0.9)))
-          drop-shadow(0 0 16px var(--ring-color, rgba(255,120,60,0.6)));
+        opacity: 0.75;
+        transform: scale(1.08);
       }
       100% {
-        filter: var(--piece-filter, none) drop-shadow(0 0 6px var(--ring-color, rgba(255,120,60,0.8)));
+        opacity: 0.5;
+        transform: scale(1.02);
       }
     }
 
     @keyframes ringSoft {
       0% {
-        filter: var(--piece-filter, none) drop-shadow(0 0 3px var(--ring-color, rgba(255,255,255,0.7)));
+        opacity: 0.25;
+        transform: scale(0.98);
       }
       100% {
-        filter: var(--piece-filter, none) drop-shadow(0 0 7px var(--ring-color, rgba(255,255,255,0.85)));
+        opacity: 0.6;
+        transform: scale(1.03);
       }
     }
 
     @keyframes fireworks {
       0% {
         transform: scale(0.96);
-        filter: var(--piece-filter, none) drop-shadow(0 0 6px rgba(255,210,80,0.7));
+        opacity: 0.4;
       }
       40% {
         transform: scale(1.08);
-        filter: var(--piece-filter, none)
-          drop-shadow(0 0 14px rgba(255,210,80,0.95))
-          drop-shadow(0 0 24px rgba(255,120,80,0.8));
+        opacity: 0.95;
       }
       100% {
         transform: scale(1.02);
-        filter: var(--piece-filter, none) drop-shadow(0 0 8px rgba(255,210,80,0.8));
+        opacity: 0.55;
       }
     }
 
     @keyframes checkPulse {
       0% {
         transform: scale(0.98);
-        filter: var(--piece-filter, none) drop-shadow(0 0 6px rgba(255,70,70,0.8));
+        opacity: 0.35;
       }
       50% {
         transform: scale(1.08);
-        filter: var(--piece-filter, none)
-          drop-shadow(0 0 14px rgba(255,70,70,0.95))
-          drop-shadow(0 0 22px rgba(255,70,70,0.7));
+        opacity: 0.95;
       }
       100% {
         transform: scale(1);
-        filter: var(--piece-filter, none) drop-shadow(0 0 8px rgba(255,70,70,0.85));
+        opacity: 0.6;
       }
     }
 
     @keyframes mateFlare {
       0% {
         transform: scale(0.92) rotate(0deg);
-        filter: var(--piece-filter, none) drop-shadow(0 0 8px rgba(255,200,60,0.9));
+        opacity: 0.45;
       }
       50% {
         transform: scale(1.15) rotate(6deg);
-        filter: var(--piece-filter, none)
-          drop-shadow(0 0 20px rgba(255,200,60,1))
-          drop-shadow(0 0 28px rgba(255,140,80,0.85));
+        opacity: 1;
       }
       100% {
         transform: scale(1) rotate(0deg);
-        filter: var(--piece-filter, none) drop-shadow(0 0 12px rgba(255,200,60,0.9));
+        opacity: 0.7;
       }
     }
 
@@ -308,34 +331,17 @@ function applyEffect(effectName, targetName) {
       0% {
         transform: scale(0.6);
         opacity: 0;
-        filter: var(--piece-filter, none) drop-shadow(0 0 0 rgba(255,120,60,0.7));
       }
       40% {
         transform: scale(1.05);
         opacity: 1;
-        filter: var(--piece-filter, none) drop-shadow(0 0 16px rgba(255,120,60,0.85));
       }
       100% {
         transform: scale(1.2);
         opacity: 0;
-        filter: var(--piece-filter, none) drop-shadow(0 0 28px rgba(255,120,60,0));
       }
     }
 
-    @keyframes queenCapture {
-      0% {
-        transform: scale(1);
-        filter: var(--piece-filter, none) drop-shadow(0 0 4px rgba(255,190,90,0.7));
-      }
-      50% {
-        transform: scale(1.08);
-        filter: var(--piece-filter, none) drop-shadow(0 0 12px rgba(255,190,90,1));
-      }
-      100% {
-        transform: scale(1);
-        filter: var(--piece-filter, none) drop-shadow(0 0 6px rgba(255,190,90,0.8));
-      }
-    }
   `;
 
   if (definition.type === "filter") {
@@ -367,26 +373,25 @@ function applyEffect(effectName, targetName) {
     ${glowTargetHint},
     ${glowTargetHighlight} {
       animation: ${ringAnimation}, glowPulse 2.6s ease-in-out infinite;
+      will-change: transform, opacity;
     }
 
     ${glowTargetCheck} {
       animation: checkPulse 1s ease-in-out infinite, glowPulse 2.2s ease-in-out infinite;
       --ring-color: rgba(255,70,70,0.9);
+      will-change: transform, opacity;
     }
 
     ${glowTargetCheckmate},
     ${glowTargetMate} {
       animation: mateFlare 1.4s ease-in-out infinite, fireworks 1.2s ease-out infinite;
       --ring-color: rgba(255,200,60,0.95);
+      will-change: transform, opacity;
     }
 
     ${glowTargetCapture} {
       animation: captureBurst 0.9s ease-out;
-    }
-
-    .captured-pieces .piece.wq,
-    .captured-pieces .piece.bq {
-      animation: queenCapture 1.4s ease-in-out 1;
+      will-change: transform, opacity;
     }
   `;
 
