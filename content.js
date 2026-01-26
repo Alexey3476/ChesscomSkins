@@ -45,12 +45,12 @@ const EFFECT_DEFINITIONS = {
   "minimal": {
     type: "filter",
     filter: "saturate(1.02)",
-    ringColor: "rgba(255,255,255,0.75)",
-    ringOpacity: 0.5,
-    ringBorder: "1px",
-    ringInset: "14%",
+    ringColor: "rgba(255,255,255,0.9)",
+    ringOpacity: 0.75,
+    ringBorder: "2px",
+    ringInset: "12%",
     ringAnimation: "ringSoft 1.6s ease-in-out infinite",
-    ringGlow: "0 0 8px rgba(255,255,255,0.35)"
+    ringGlow: "0 0 12px rgba(255,255,255,0.55)"
   },
   "none": {
     type: "none"
@@ -82,7 +82,9 @@ function applySkin(skinName) {
         .promotion-piece.${piece},
         .captured-pieces .piece.${piece},
         .captured-piece.${piece},
-        .captured .piece.${piece} {
+        .captured-piece .piece.${piece},
+        .captured .piece.${piece},
+        [class*="captured"] .piece.${piece} {
           background-image: url("${url}") !important;
           background-size: contain !important;
           background-repeat: no-repeat !important;
@@ -118,6 +120,20 @@ function applyEffect(effectName) {
     .promotion-piece {
       position: relative;
       will-change: transform, filter;
+    }
+
+    .piece::before,
+    .promotion-piece::before {
+      content: "";
+      position: absolute;
+      inset: 5%;
+      border-radius: 50%;
+      opacity: 0.12;
+      pointer-events: none;
+      background: radial-gradient(circle, var(--ring-color, rgba(255,140,80,0.5)) 0%, rgba(0,0,0,0) 65%);
+      animation: glowShift 2.8s ease-in-out infinite;
+      mix-blend-mode: screen;
+      z-index: 1;
     }
 
     .piece::after,
@@ -161,6 +177,12 @@ function applyEffect(effectName) {
         transform: scale(1.03);
         box-shadow: 0 0 8px var(--ring-color, rgba(255,255,255,0.65));
       }
+    }
+
+    @keyframes glowShift {
+      0% { transform: scale(0.96); opacity: 0.1; }
+      50% { transform: scale(1.04); opacity: 0.22; }
+      100% { transform: scale(0.98); opacity: 0.12; }
     }
 
     @keyframes checkPulse {
