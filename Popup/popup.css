@@ -32,9 +32,17 @@ h2 {
 
 .preview-window {
   margin-top: 12px;
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
+}
+
+.set[data-type="skin"] {
+  order: 1;
+}
+
+.set[data-type="effect"] {
+  order: 2;
 }
 
 .set {
