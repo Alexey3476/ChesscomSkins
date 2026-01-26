@@ -2,7 +2,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 body {
-  width: 360px;
+  width: 420px;
   padding: 20px;
   font-family: Inter, sans-serif;
   background: #f6d9c9;
@@ -33,7 +33,7 @@ h2 {
 .preview-window {
   margin-top: 12px;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 12px;
 }
 
@@ -58,6 +58,11 @@ h2 {
 
 .set.disabled {
   opacity: 0.5;
+}
+
+.target-toggle.disabled {
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 .set.active {
@@ -104,9 +109,11 @@ button:active {
 .preview.dark  { background: #3b2b32; }
 
 .preview.effect-preview-tile {
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   justify-items: center;
   align-items: center;
+  padding-top: 28px;
+  padding-bottom: 16px;
 }
 
 .effect-king {
@@ -130,7 +137,7 @@ button:active {
 .effect-king::after {
   content: attr(data-label);
   position: absolute;
-  bottom: calc(100% + 6px);
+  bottom: calc(100% + 10px);
   left: 50%;
   transform: translateX(-50%) translateY(4px);
   padding: 4px 8px;
@@ -155,6 +162,41 @@ button:active {
   outline: 2px solid rgba(124,21,45,0.7);
   border-radius: 10px;
   box-shadow: 0 0 10px rgba(124,21,45,0.35);
+}
+
+.target-toggle {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 14px;
+  color: #202020;
+}
+
+.target-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.target-button {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  background: #fff;
+  transition: 0.2s ease;
+}
+
+.target-button.active {
+  background: #7c152d;
+  color: #f1d1c8;
+  box-shadow: 0 0 12px rgba(124,21,45,0.35);
 }
 
 .preview::after {
