@@ -2,6 +2,7 @@
 const toggle = document.getElementById("toggle");
 const skinSets = document.querySelectorAll("[data-skin]");
 const effectSets = document.querySelectorAll("[data-effect]");
+const targetSets = document.querySelectorAll("[data-target]");
 
 const SKIN_SET_IDS = ["set2", "none"];
 const EFFECT_SET_IDS = [
@@ -12,18 +13,22 @@ const EFFECT_SET_IDS = [
   "minimal",
   "none"
 ];
+const TARGET_IDS = ["all", "royal"];
 
 const SKIN_PREVIEW_BASE = {
   set2: "../assets/Set2",
   none: "../assets/Set2"
 };
 
-chrome.storage.sync.get(["enabled", "activeSkin", "activeEffect", "activeSet"], data => {
+chrome.storage.sync.get(
+  ["enabled", "activeSkin", "activeEffect", "activeTarget", "activeSet"],
+  data => {
   toggle.checked = !!data.enabled;
   updateUI(toggle.checked);
 
   let activeSkin = data.activeSkin;
   let activeEffect = data.activeEffect;
+  let activeTarget = data.activeTarget || "all";
 
   if (data.activeSet && !activeSkin && !activeEffect) {
     if (SKIN_SET_IDS.includes(data.activeSet)) {
@@ -31,7 +36,7 @@ chrome.storage.sync.get(["enabled", "activeSkin", "activeEffect", "activeSet"], 
     } else if (EFFECT_SET_IDS.includes(data.activeSet)) {
       activeEffect = data.activeSet;
     }
-    chrome.storage.sync.set({ activeSkin, activeEffect });
+    chrome.storage.sync.set({ activeSkin, activeEffect, activeTarget });
   }
 
   if (activeSkin) {
@@ -39,6 +44,7 @@ chrome.storage.sync.get(["enabled", "activeSkin", "activeEffect", "activeSet"], 
     updateEffectPreviews(activeSkin);
   }
   if (activeEffect) setActiveEffectUI(activeEffect);
+  if (activeTarget) setActiveTargetUI(activeTarget);
 });
 
 toggle.addEventListener("change", () => {
@@ -46,11 +52,12 @@ toggle.addEventListener("change", () => {
     chrome.storage.sync.set({ enabled: false });
     updateUI(false);
   } else {
-    chrome.storage.sync.get(["activeSkin", "activeEffect"], (data) => {
+    chrome.storage.sync.get(["activeSkin", "activeEffect", "activeTarget"], (data) => {
       chrome.storage.sync.set({ enabled: true });
       updateUI(true);
       setActiveSkinUI(data.activeSkin || null);
       setActiveEffectUI(data.activeEffect || null);
+      setActiveTargetUI(data.activeTarget || "all");
       updateEffectPreviews(data.activeSkin || "set2");
     });
   }
@@ -81,11 +88,26 @@ effectSets.forEach(set => {
   });
 });
 
+targetSets.forEach(set => {
+  const setName = set.dataset.target;
+
+  set.querySelector("button").addEventListener("click", () => {
+    if (!toggle.checked) return;
+
+    chrome.storage.sync.set({ activeTarget: setName }, () => {
+      setActiveTargetUI(setName);
+    });
+  });
+});
+
 function updateUI(enabled) {
   skinSets.forEach(set => {
     set.classList.toggle("disabled", !enabled);
   });
   effectSets.forEach(set => {
+    set.classList.toggle("disabled", !enabled);
+  });
+  targetSets.forEach(set => {
     set.classList.toggle("disabled", !enabled);
   });
 }
@@ -99,6 +121,12 @@ function setActiveSkinUI(activeID) {
 function setActiveEffectUI(activeID) {
   effectSets.forEach(set => {
     set.classList.toggle("active", activeID && set.dataset.effect === activeID);
+  });
+}
+
+function setActiveTargetUI(activeID) {
+  targetSets.forEach(set => {
+    set.classList.toggle("active", activeID && set.dataset.target === activeID);
   });
 }
 
