@@ -63,6 +63,7 @@ let lastAppliedSkin = null;
 let lastAppliedEffect = null;
 let lastAppliedTarget = null;
 let overlayStyleTag = null;
+let skinsEnabled = false;
 
 function applySkin(skinName) {
   if (lastAppliedSkin === skinName) return;
@@ -87,6 +88,8 @@ function applySkin(skinName) {
         .captured-piece .piece.${piece},
         .captured .piece.${piece},
         [class*="captured"] .piece.${piece},
+        .captured-pieces [data-piece="${piece}"],
+        .captured-pieces [class*="piece"][data-piece="${piece}"],
         [class*="captured"] [data-piece="${piece}"],
         .captured-piece[data-piece="${piece}"] {
           background-image: url("${url}") !important;
@@ -114,147 +117,177 @@ function applyEffect(effectName, targetName) {
   const definition = EFFECT_DEFINITIONS[effectName];
   if (!definition || definition.type === "none") return;
 
-  const ringInset = definition.ringInset || "8%";
-  const ringBorder = definition.ringBorder || "2px";
-  const ringOpacity = typeof definition.ringOpacity === "number" ? definition.ringOpacity : 1;
-  const ringGlow = definition.ringGlow || "0 0 22px rgba(0,0,0,0.25)";
   const ringAnimation = definition.ringAnimation || "ringPulse 1.2s ease-in-out infinite";
-  const boostedOpacity = Math.min(ringOpacity * 1.3, 1);
 
   const glowTargets = targetName === "royal"
     ? [".piece.wk", ".piece.wq", ".piece.bk", ".piece.bq"]
     : [".piece", ".promotion-piece"];
   const glowTargetSelector = glowTargets.join(", ");
-  const glowTargetBefore = glowTargets.map((target) => `${target}::before`).join(", ");
-  const glowTargetAfter = glowTargets.map((target) => `${target}::after`).join(", ");
-  const glowTargetSelectedAfter = glowTargets.map((target) => `.selected ${target}::after`).join(", ");
-  const glowTargetSelectedSelfAfter = glowTargets.map((target) => `${target}.selected::after`).join(", ");
-  const glowTargetLastMoveAfter = glowTargets.map((target) => `.last-move ${target}::after`).join(", ");
-  const glowTargetMoveAfter = glowTargets.map((target) => `.move ${target}::after`).join(", ");
-  const glowTargetHintAfter = glowTargets.map((target) => `.hint ${target}::after`).join(", ");
-  const glowTargetHighlightAfter = glowTargets.map((target) => `.highlight ${target}::after`).join(", ");
-  const glowTargetCheckAfter = glowTargets.map((target) => `.check ${target}::after`).join(", ");
-  const glowTargetCheckmateAfter = glowTargets.map((target) => `.checkmate ${target}::after`).join(", ");
-  const glowTargetMateAfter = glowTargets.map((target) => `.mate ${target}::after`).join(", ");
-  const glowTargetCaptureAfter = glowTargets.map((target) => `.capture ${target}::after`).join(", ");
-  const glowTargetCheckmateBefore = glowTargets.map((target) => `.checkmate ${target}::before`).join(", ");
-  const glowTargetMateBefore = glowTargets.map((target) => `.mate ${target}::before`).join(", ");
+  const glowTargetSelected = glowTargets.map((target) => `.selected ${target}`).join(", ");
+  const glowTargetSelectedSelf = glowTargets.map((target) => `${target}.selected`).join(", ");
+  const glowTargetLastMove = glowTargets.map((target) => `.last-move ${target}`).join(", ");
+  const glowTargetMove = glowTargets.map((target) => `.move ${target}`).join(", ");
+  const glowTargetHint = glowTargets.map((target) => `.hint ${target}`).join(", ");
+  const glowTargetHighlight = glowTargets.map((target) => `.highlight ${target}`).join(", ");
+  const glowTargetCheck = glowTargets.map((target) => `.check ${target}`).join(", ");
+  const glowTargetCheckmate = glowTargets.map((target) => `.checkmate ${target}`).join(", ");
+  const glowTargetMate = glowTargets.map((target) => `.mate ${target}`).join(", ");
+  const glowTargetCapture = glowTargets.map((target) => `.capture ${target}`).join(", ");
 
   let css = `
     .piece,
     .promotion-piece {
       position: relative;
       will-change: transform, filter;
+      filter: var(--piece-filter, none);
     }
 
-    ${glowTargetBefore} {
-      content: "";
-      position: absolute;
-      inset: 5%;
-      border-radius: 50%;
-      opacity: 0.12;
-      pointer-events: none;
-      background: radial-gradient(circle, var(--ring-color, rgba(255,140,80,0.5)) 0%, rgba(0,0,0,0) 65%);
-      animation: glowShift 2.8s ease-in-out infinite;
-      mix-blend-mode: screen;
-      z-index: 1;
+    ${glowTargetSelector} {
+      filter: var(--piece-filter, none);
+      transition: filter 0.2s ease;
     }
 
-    ${glowTargetAfter} {
-      content: "";
-      position: absolute;
-      inset: ${ringInset};
-      border-radius: 50%;
-      opacity: 0;
-      pointer-events: none;
-      border: ${ringBorder} solid var(--ring-color, rgba(255,120,60,0.85));
-      box-shadow:
-        0 0 10px var(--ring-color, rgba(255,120,60,0.85)),
-        ${ringGlow},
-        0 0 18px var(--ring-color, rgba(255,120,60,0.6));
-      animation: ${ringAnimation};
-      mix-blend-mode: screen;
-      z-index: 2;
-    }
-
-    .captured .piece::before,
-    .captured .piece::after,
-    .captured-piece::before,
-    .captured-piece::after,
-    .captured-pieces .piece::before,
-    .captured-pieces .piece::after,
-    [class*="captured"] .piece::before,
-    [class*="captured"] .piece::after {
-      opacity: 0 !important;
+    .captured .piece,
+    .captured-piece,
+    .captured-pieces .piece,
+    [class*="captured"] .piece {
       animation: none !important;
+      filter: var(--piece-filter, none) !important;
+    }
+
+    @keyframes glowPulse {
+      0% {
+        filter: var(--piece-filter, none) drop-shadow(0 0 4px var(--ring-color, rgba(255,120,60,0.85)));
+      }
+      70% {
+        filter: var(--piece-filter, none)
+          drop-shadow(0 0 10px var(--ring-color, rgba(255,120,60,0.85)))
+          drop-shadow(0 0 18px var(--ring-color, rgba(255,120,60,0.6)));
+      }
+      100% {
+        filter: var(--piece-filter, none) drop-shadow(0 0 6px var(--ring-color, rgba(255,120,60,0.85)));
+      }
+    }
+
+    @keyframes glowShimmer {
+      0% {
+        filter: var(--piece-filter, none) drop-shadow(0 0 5px var(--ring-color, rgba(255,120,60,0.75)));
+      }
+      50% {
+        filter: var(--piece-filter, none)
+          drop-shadow(0 0 12px var(--ring-color, rgba(255,120,60,0.95)))
+          drop-shadow(0 0 22px var(--ring-color, rgba(255,120,60,0.7)));
+      }
+      100% {
+        filter: var(--piece-filter, none) drop-shadow(0 0 6px var(--ring-color, rgba(255,120,60,0.8)));
+      }
     }
 
     @keyframes ringPulse {
       0% {
-        transform: scale(0.9);
-        box-shadow: 0 0 6px var(--ring-color, rgba(255,120,60,0.85));
+        filter: var(--piece-filter, none) drop-shadow(0 0 4px var(--ring-color, rgba(255,120,60,0.8)));
       }
       70% {
-        transform: scale(1.08);
-        box-shadow: 0 0 14px var(--ring-color, rgba(255,120,60,0.85));
+        filter: var(--piece-filter, none)
+          drop-shadow(0 0 10px var(--ring-color, rgba(255,120,60,0.9)))
+          drop-shadow(0 0 16px var(--ring-color, rgba(255,120,60,0.6)));
       }
       100% {
-        transform: scale(1);
-        box-shadow: 0 0 10px var(--ring-color, rgba(255,120,60,0.85));
+        filter: var(--piece-filter, none) drop-shadow(0 0 6px var(--ring-color, rgba(255,120,60,0.8)));
       }
     }
 
     @keyframes ringSoft {
       0% {
-        transform: scale(0.98);
-        box-shadow: 0 0 4px var(--ring-color, rgba(255,255,255,0.65));
+        filter: var(--piece-filter, none) drop-shadow(0 0 3px var(--ring-color, rgba(255,255,255,0.7)));
       }
       100% {
-        transform: scale(1.03);
-        box-shadow: 0 0 8px var(--ring-color, rgba(255,255,255,0.65));
+        filter: var(--piece-filter, none) drop-shadow(0 0 7px var(--ring-color, rgba(255,255,255,0.85)));
       }
-    }
-
-    @keyframes glowShift {
-      0% { transform: scale(0.96); opacity: 0.1; }
-      50% { transform: scale(1.04); opacity: 0.22; }
-      100% { transform: scale(0.98); opacity: 0.12; }
-    }
-
-    @keyframes shimmer {
-      0% { background-position: 0% 50%; opacity: 0.1; }
-      50% { background-position: 100% 50%; opacity: 0.28; }
-      100% { background-position: 0% 50%; opacity: 0.12; }
     }
 
     @keyframes fireworks {
-      0% { transform: scale(0.6); opacity: 0; }
-      40% { transform: scale(1.1); opacity: 1; }
-      100% { transform: scale(1.4); opacity: 0; }
+      0% {
+        transform: scale(0.96);
+        filter: var(--piece-filter, none) drop-shadow(0 0 6px rgba(255,210,80,0.7));
+      }
+      40% {
+        transform: scale(1.08);
+        filter: var(--piece-filter, none)
+          drop-shadow(0 0 14px rgba(255,210,80,0.95))
+          drop-shadow(0 0 24px rgba(255,120,80,0.8));
+      }
+      100% {
+        transform: scale(1.02);
+        filter: var(--piece-filter, none) drop-shadow(0 0 8px rgba(255,210,80,0.8));
+      }
     }
 
     @keyframes checkPulse {
-      0% { transform: scale(0.95); box-shadow: 0 0 8px rgba(255,70,70,0.8); }
-      50% { transform: scale(1.1); box-shadow: 0 0 18px rgba(255,70,70,0.95); }
-      100% { transform: scale(1); box-shadow: 0 0 10px rgba(255,70,70,0.8); }
+      0% {
+        transform: scale(0.98);
+        filter: var(--piece-filter, none) drop-shadow(0 0 6px rgba(255,70,70,0.8));
+      }
+      50% {
+        transform: scale(1.08);
+        filter: var(--piece-filter, none)
+          drop-shadow(0 0 14px rgba(255,70,70,0.95))
+          drop-shadow(0 0 22px rgba(255,70,70,0.7));
+      }
+      100% {
+        transform: scale(1);
+        filter: var(--piece-filter, none) drop-shadow(0 0 8px rgba(255,70,70,0.85));
+      }
     }
 
     @keyframes mateFlare {
-      0% { transform: scale(0.9) rotate(0deg); box-shadow: 0 0 10px rgba(255,200,60,0.9); }
-      50% { transform: scale(1.15) rotate(6deg); box-shadow: 0 0 26px rgba(255,200,60,1); }
-      100% { transform: scale(1) rotate(0deg); box-shadow: 0 0 14px rgba(255,200,60,0.9); }
+      0% {
+        transform: scale(0.92) rotate(0deg);
+        filter: var(--piece-filter, none) drop-shadow(0 0 8px rgba(255,200,60,0.9));
+      }
+      50% {
+        transform: scale(1.15) rotate(6deg);
+        filter: var(--piece-filter, none)
+          drop-shadow(0 0 20px rgba(255,200,60,1))
+          drop-shadow(0 0 28px rgba(255,140,80,0.85));
+      }
+      100% {
+        transform: scale(1) rotate(0deg);
+        filter: var(--piece-filter, none) drop-shadow(0 0 12px rgba(255,200,60,0.9));
+      }
     }
 
     @keyframes captureBurst {
-      0% { transform: scale(0.6); opacity: 0; box-shadow: 0 0 0 rgba(255,120,60,0.7); }
-      40% { transform: scale(1.05); opacity: 1; box-shadow: 0 0 18px rgba(255,120,60,0.85); }
-      100% { transform: scale(1.2); opacity: 0; box-shadow: 0 0 30px rgba(255,120,60,0); }
+      0% {
+        transform: scale(0.6);
+        opacity: 0;
+        filter: var(--piece-filter, none) drop-shadow(0 0 0 rgba(255,120,60,0.7));
+      }
+      40% {
+        transform: scale(1.05);
+        opacity: 1;
+        filter: var(--piece-filter, none) drop-shadow(0 0 16px rgba(255,120,60,0.85));
+      }
+      100% {
+        transform: scale(1.2);
+        opacity: 0;
+        filter: var(--piece-filter, none) drop-shadow(0 0 28px rgba(255,120,60,0));
+      }
     }
 
     @keyframes queenCapture {
-      0% { transform: scale(1); filter: drop-shadow(0 0 4px rgba(255,190,90,0.7)); }
-      50% { transform: scale(1.08); filter: drop-shadow(0 0 12px rgba(255,190,90,1)); }
-      100% { transform: scale(1); filter: drop-shadow(0 0 6px rgba(255,190,90,0.8)); }
+      0% {
+        transform: scale(1);
+        filter: var(--piece-filter, none) drop-shadow(0 0 4px rgba(255,190,90,0.7));
+      }
+      50% {
+        transform: scale(1.08);
+        filter: var(--piece-filter, none) drop-shadow(0 0 12px rgba(255,190,90,1));
+      }
+      100% {
+        transform: scale(1);
+        filter: var(--piece-filter, none) drop-shadow(0 0 6px rgba(255,190,90,0.8));
+      }
     }
   `;
 
@@ -262,9 +295,8 @@ function applyEffect(effectName, targetName) {
     css += `
       .piece,
       .promotion-piece {
-        filter: ${definition.filter} !important;
+        --piece-filter: ${definition.filter};
         --ring-color: ${definition.ringColor};
-        --ring-opacity: ${boostedOpacity};
       }
     `;
 
@@ -281,50 +313,33 @@ function applyEffect(effectName, targetName) {
   }
 
   css += `
-    ${glowTargetSelectedAfter},
-    ${glowTargetSelectedSelfAfter},
-    ${glowTargetLastMoveAfter},
-    ${glowTargetMoveAfter},
-    ${glowTargetHintAfter},
-    ${glowTargetHighlightAfter} {
-      opacity: var(--ring-opacity, 1);
+    ${glowTargetSelected},
+    ${glowTargetSelectedSelf},
+    ${glowTargetLastMove},
+    ${glowTargetMove},
+    ${glowTargetHint},
+    ${glowTargetHighlight} {
+      animation: ${ringAnimation}, glowShimmer 3.2s ease-in-out infinite;
     }
 
-    ${glowTargetCheckAfter} {
-      opacity: 1;
-      animation: checkPulse 1s ease-in-out infinite;
+    ${glowTargetCheck} {
+      animation: checkPulse 1s ease-in-out infinite, glowShimmer 2.4s ease-in-out infinite;
       --ring-color: rgba(255,70,70,0.9);
     }
 
-    ${glowTargetCheckmateAfter},
-    ${glowTargetMateAfter} {
-      opacity: 1;
-      animation: mateFlare 1.4s ease-in-out infinite;
+    ${glowTargetCheckmate},
+    ${glowTargetMate} {
+      animation: mateFlare 1.4s ease-in-out infinite, fireworks 1.2s ease-out infinite;
       --ring-color: rgba(255,200,60,0.95);
     }
 
-    ${glowTargetCaptureAfter} {
+    ${glowTargetCapture} {
       animation: captureBurst 0.9s ease-out;
     }
 
     .captured-pieces .piece.wq,
     .captured-pieces .piece.bq {
       animation: queenCapture 1.4s ease-in-out 1;
-    }
-
-    ${glowTargetBefore} {
-      background-image: linear-gradient(120deg, rgba(255,255,255,0.05), var(--ring-color, rgba(255,140,80,0.5)), rgba(255,255,255,0.05));
-      background-size: 200% 200%;
-      animation: shimmer 3.2s ease-in-out infinite;
-    }
-
-    ${glowTargetCheckmateBefore},
-    ${glowTargetMateBefore} {
-      background-image:
-        radial-gradient(circle, rgba(255,210,80,0.9) 0%, rgba(255,210,80,0) 60%),
-        radial-gradient(circle, rgba(255,120,80,0.7) 0%, rgba(255,120,80,0) 70%);
-      animation: fireworks 1.2s ease-out infinite;
-      opacity: 0.8;
     }
   `;
 
@@ -343,7 +358,8 @@ function disableSkins() {
 }
 
 chrome.storage.sync.get(["enabled", "activeSkin", "activeEffect", "activeTarget", "activeSet"], (data) => {
-  if (!data.enabled) return;
+  skinsEnabled = !!data.enabled;
+  if (!skinsEnabled) return;
 
   let activeSkin = data.activeSkin;
   let activeEffect = data.activeEffect;
@@ -363,10 +379,12 @@ chrome.storage.sync.get(["enabled", "activeSkin", "activeEffect", "activeTarget"
 
 chrome.storage.onChanged.addListener((changes) => {
   if (changes.enabled && changes.enabled.newValue === false) {
+    skinsEnabled = false;
     disableSkins();
   }
 
   if (changes.enabled && changes.enabled.newValue === true) {
+    skinsEnabled = true;
     chrome.storage.sync.get(["activeSkin", "activeEffect", "activeTarget"], (data) => {
       applySkin(data.activeSkin || "set2");
       applyEffect(data.activeEffect || "native-ember", data.activeTarget || "all");
@@ -403,6 +421,8 @@ chrome.storage.onChanged.addListener((changes) => {
 });
 
 let lastOverlayAt = 0;
+let hasShownGoodLuck = false;
+let goodLuckObserver = null;
 
 function ensureOverlayStyles() {
   if (overlayStyleTag) return;
@@ -436,6 +456,8 @@ function ensureOverlayStyles() {
 }
 
 function showGoodLuckOverlay() {
+  if (!skinsEnabled) return;
+  if (hasShownGoodLuck) return;
   const now = Date.now();
   if (now - lastOverlayAt < 5000) return;
   lastOverlayAt = now;
@@ -446,17 +468,25 @@ function showGoodLuckOverlay() {
   overlay.textContent = "Good luck";
   document.body.appendChild(overlay);
   setTimeout(() => overlay.remove(), 3400);
+  hasShownGoodLuck = true;
+  if (goodLuckObserver) {
+    goodLuckObserver.disconnect();
+    goodLuckObserver = null;
+  }
 }
 
 function watchForGameStart() {
+  if (window.location.pathname.includes("/analysis")) return;
   const maybeShow = () => {
     const board = document.querySelector(".board, .board-area, .board-container, chess-board");
     if (board) showGoodLuckOverlay();
   };
 
   maybeShow();
-  const observer = new MutationObserver(() => maybeShow());
-  observer.observe(document.body, { childList: true, subtree: true });
+  if (!goodLuckObserver) {
+    goodLuckObserver = new MutationObserver(() => maybeShow());
+    goodLuckObserver.observe(document.body, { childList: true, subtree: true });
+  }
 }
 
 if (document.readyState === "loading") {

@@ -69,9 +69,12 @@ skinSets.forEach(set => {
   set.querySelector("button").addEventListener("click", () => {
     if (!toggle.checked) return;
 
-    chrome.storage.sync.set({ activeSkin: setName }, () => {
-      setActiveSkinUI(setName);
-      updateEffectPreviews(setName);
+    const isActive = set.classList.contains("active");
+    const nextSkin = isActive ? "none" : setName;
+
+    chrome.storage.sync.set({ activeSkin: nextSkin }, () => {
+      setActiveSkinUI(isActive ? null : setName);
+      updateEffectPreviews(nextSkin === "none" ? "set2" : nextSkin);
     });
   });
 });
@@ -82,8 +85,11 @@ effectSets.forEach(set => {
   set.querySelector("button").addEventListener("click", () => {
     if (!toggle.checked) return;
 
-    chrome.storage.sync.set({ activeEffect: setName }, () => {
-      setActiveEffectUI(setName);
+    const isActive = set.classList.contains("active");
+    const nextEffect = isActive ? "none" : setName;
+
+    chrome.storage.sync.set({ activeEffect: nextEffect }, () => {
+      setActiveEffectUI(isActive ? null : setName);
     });
   });
 });
@@ -135,9 +141,11 @@ function updateEffectPreviews(activeSkin) {
   effectSets.forEach(set => {
     const previewPieces = (set.dataset.preview || "wq").split(" ");
     const images = set.querySelectorAll("img");
+    const label = set.querySelector("button")?.textContent?.trim() || "";
     images.forEach((img, index) => {
       const piece = previewPieces[index] || previewPieces[0];
       img.src = `${basePath}/${piece}.png`;
+      if (label) img.title = label;
     });
   });
 }
