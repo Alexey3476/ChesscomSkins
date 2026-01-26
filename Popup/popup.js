@@ -15,16 +15,17 @@ function updateEffectPreviews(activeSkin) {
   });
 }
 
-chrome.storage.sync.get(["enabled", "activeSet", "activeSkinPreview"], data => {
+chrome.storage.sync.get(["enabled", "activeSet", "activeSkin", "activeEffect"], data => {
   toggle.checked = !!data.enabled;
   updateUI(toggle.checked);
 
-  if (data.activeSet) {
-    currentActiveSet = data.activeSet === "none" ? null : data.activeSet;
-    setActiveUI(currentActiveSet);
-  }
+  const activeSet = data.activeSet && data.activeSet !== "none" ? data.activeSet : null;
+  const activeSkin = data.activeSkin && data.activeSkin !== "none" ? data.activeSkin : null;
+  const activeEffect = data.activeEffect && data.activeEffect !== "none" ? data.activeEffect : null;
 
-  updateEffectPreviews(data.activeSkinPreview || "set2");
+  currentActiveSet = activeSet || activeEffect || activeSkin || null;
+  setActiveUI(currentActiveSet);
+  updateEffectPreviews(activeSkin || "set2");
 });
 
 toggle.addEventListener("change", () => {
@@ -32,12 +33,15 @@ toggle.addEventListener("change", () => {
     chrome.storage.sync.set({ enabled: false });
     updateUI(false);
   } else {
-    chrome.storage.sync.get(["activeSet", "activeSkinPreview"], (data) => {
+    chrome.storage.sync.get(["activeSet", "activeSkin", "activeEffect"], (data) => {
       chrome.storage.sync.set({ enabled: true });
       updateUI(true);
-      currentActiveSet = data.activeSet === "none" ? null : data.activeSet;
+      const activeSet = data.activeSet && data.activeSet !== "none" ? data.activeSet : null;
+      const activeSkin = data.activeSkin && data.activeSkin !== "none" ? data.activeSkin : null;
+      const activeEffect = data.activeEffect && data.activeEffect !== "none" ? data.activeEffect : null;
+      currentActiveSet = activeSet || activeEffect || activeSkin || null;
       setActiveUI(currentActiveSet);
-      updateEffectPreviews(data.activeSkinPreview || "set2");
+      updateEffectPreviews(activeSkin || "set2");
     });
   }
 });
@@ -53,15 +57,18 @@ sets.forEach(set => {
     const nextSet = isSame ? "none" : setName;
 
     const storageUpdate = { activeSet: nextSet };
-    if (!isSame && setType === "skin") {
-      storageUpdate.activeSkinPreview = setName;
+    if (setType === "skin") {
+      storageUpdate.activeSkin = isSame ? "none" : setName;
+    }
+    if (setType === "effect") {
+      storageUpdate.activeEffect = isSame ? "none" : setName;
     }
 
     chrome.storage.sync.set(storageUpdate, () => {
       currentActiveSet = isSame ? null : setName;
       setActiveUI(currentActiveSet);
-      if (!isSame && setType === "skin") {
-        updateEffectPreviews(setName);
+      if (setType === "skin") {
+        updateEffectPreviews(isSame ? "set2" : setName);
       }
     });
   });

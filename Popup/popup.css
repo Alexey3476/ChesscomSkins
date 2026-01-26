@@ -97,6 +97,7 @@ button:active {
   padding: 10px;
   border-radius: 12px;
   background: inherit;
+  overflow: hidden;
 }
 
 .preview.light { background: #e9d0c1; }
