@@ -66,6 +66,7 @@ let overlayStyleTag = null;
 let skinsEnabled = false;
 let activeSkinPath = null;
 let capturedObserver = null;
+let captureUpdateScheduled = false;
 
 function applySkin(skinName, skinPath) {
   if (lastAppliedSkin === skinName && activeSkinPath === skinPath) return;
@@ -79,7 +80,10 @@ function applySkin(skinName, skinPath) {
 
   skinStyleTag = document.createElement("style");
   const definition = SKIN_DEFINITIONS[skinName];
-  if ((!definition || definition.type === "none") && !skinPath) return;
+  if ((!definition || definition.type === "none") && !skinPath) {
+    activeSkinPath = null;
+    return;
+  }
 
   let css = "";
   const resolvedPath = skinPath || definition.path;
@@ -121,6 +125,15 @@ function ensureCapturedObserver() {
 }
 
 function updateCapturedImages() {
+  if (captureUpdateScheduled) return;
+  captureUpdateScheduled = true;
+  requestAnimationFrame(() => {
+    captureUpdateScheduled = false;
+    applyCapturedImages();
+  });
+}
+
+function applyCapturedImages() {
   if (!activeSkinPath) return;
   const elements = document.querySelectorAll(
     ".captured-pieces [data-piece], [class*=\"captured\"] [data-piece], .captured-pieces .piece, [class*=\"captured\"] .piece"
@@ -184,7 +197,6 @@ function applyEffect(effectName, targetName) {
     ${glowTargetSelector} {
       filter: var(--piece-filter, none);
       transition: filter 0.2s ease;
-      animation: glowPulse 3s ease-in-out infinite;
     }
 
     .captured .piece,
@@ -206,20 +218,6 @@ function applyEffect(effectName, targetName) {
       }
       100% {
         filter: var(--piece-filter, none) drop-shadow(0 0 6px var(--ring-color, rgba(255,120,60,0.85)));
-      }
-    }
-
-    @keyframes glowShimmer {
-      0% {
-        filter: var(--piece-filter, none) drop-shadow(0 0 5px var(--ring-color, rgba(255,120,60,0.75)));
-      }
-      50% {
-        filter: var(--piece-filter, none)
-          drop-shadow(0 0 12px var(--ring-color, rgba(255,120,60,0.95)))
-          drop-shadow(0 0 22px var(--ring-color, rgba(255,120,60,0.7)));
-      }
-      100% {
-        filter: var(--piece-filter, none) drop-shadow(0 0 6px var(--ring-color, rgba(255,120,60,0.8)));
       }
     }
 
@@ -359,11 +357,11 @@ function applyEffect(effectName, targetName) {
     ${glowTargetMove},
     ${glowTargetHint},
     ${glowTargetHighlight} {
-      animation: ${ringAnimation}, glowShimmer 3.2s ease-in-out infinite;
+      animation: ${ringAnimation};
     }
 
     ${glowTargetCheck} {
-      animation: checkPulse 1s ease-in-out infinite, glowShimmer 2.4s ease-in-out infinite;
+      animation: checkPulse 1s ease-in-out infinite;
       --ring-color: rgba(255,70,70,0.9);
     }
 

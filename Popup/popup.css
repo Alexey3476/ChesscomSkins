@@ -75,6 +75,26 @@ h2 {
   color: #3b2b32;
 }
 
+.effect-preview.effect-ember img {
+  filter: hue-rotate(-18deg) saturate(1.3) drop-shadow(0 0 6px rgba(255,120,60,0.7));
+}
+
+.effect-preview.effect-frost img {
+  filter: hue-rotate(190deg) saturate(1.3) drop-shadow(0 0 6px rgba(110,190,255,0.7));
+}
+
+.effect-preview.effect-neon img {
+  filter: hue-rotate(280deg) saturate(1.4) drop-shadow(0 0 6px rgba(210,120,255,0.7));
+}
+
+.effect-preview.effect-legendary img {
+  filter: saturate(1.2) drop-shadow(0 0 6px rgba(255,140,80,0.8));
+}
+
+.effect-preview.effect-minimal img {
+  filter: saturate(1.05) drop-shadow(0 0 4px rgba(255,255,255,0.6));
+}
+
 .set button {
   background: white;
 }

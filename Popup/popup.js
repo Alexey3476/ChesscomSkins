@@ -17,9 +17,16 @@ const EFFECT_SET_IDS = [
   "minimal",
   "none"
 ];
-const TARGET_IDS = ["all", "royal"];
-
 const SKIN_PREVIEW_BASE = {};
+let activeEffectLabel = "Glow preview";
+let activeEffectName = null;
+const EFFECT_CLASS_MAP = {
+  "native-ember": "effect-ember",
+  "native-frost": "effect-frost",
+  "native-neon": "effect-neon",
+  "legendary-ember": "effect-legendary",
+  "minimal": "effect-minimal"
+};
 
 function renderSkins(skins) {
   skinList.innerHTML = "";
@@ -102,6 +109,7 @@ function initState() {
     setActiveEffectUI(activeEffect);
     const activeButton = effectList.querySelector(`[data-effect="${activeEffect}"]`);
     if (activeButton) updateEffectPreviewLabel(activeButton.textContent.trim(), true);
+    updateEffectPreviewClass(activeEffect);
   }
     if (activeTarget) setActiveTargetUI(activeTarget);
   });
@@ -119,6 +127,11 @@ toggle.addEventListener("change", () => {
       setActiveEffectUI(data.activeEffect || null);
       setActiveTargetUI(data.activeTarget || "all");
       updateEffectPreviews(data.activeSkin || "set2", data.activeSkinPath);
+      updateEffectPreviewClass(data.activeEffect);
+      if (data.activeEffect) {
+        const activeButton = effectList.querySelector(`[data-effect="${data.activeEffect}"]`);
+        if (activeButton) updateEffectPreviewLabel(activeButton.textContent.trim(), true);
+      }
     });
   }
 });
@@ -155,15 +168,19 @@ effectSets.forEach(set => {
     chrome.storage.sync.set({ activeEffect: nextEffect }, () => {
       setActiveEffectUI(isActive ? null : setName);
       updateEffectPreviewLabel(setName, !isActive);
+      updateEffectPreviewClass(isActive ? null : setName);
+      activeEffectName = isActive ? null : setName;
     });
   });
 
   set.addEventListener("mouseenter", () => {
     const label = set.textContent.trim();
     updateEffectPreviewLabel(label, false);
+    updateEffectPreviewClass(setName);
   });
   set.addEventListener("mouseleave", () => {
-    updateEffectPreviewLabel(null, false);
+    updateEffectPreviewLabel(activeEffectLabel, true);
+    updateEffectPreviewClass(activeEffectName);
   });
 });
 
@@ -224,6 +241,23 @@ function updateEffectPreviewLabel(label, force) {
   if (force || label) {
     effectPreviewLabel.textContent = label;
     effectPreviewImg.title = label;
+    if (force) activeEffectLabel = label;
+  }
+}
+
+function updateEffectPreviewClass(effectName) {
+  effectPreviewImg.parentElement.classList.remove(
+    "effect-ember",
+    "effect-frost",
+    "effect-neon",
+    "effect-legendary",
+    "effect-minimal"
+  );
+  if (!effectName) return;
+  activeEffectName = effectName;
+  const className = EFFECT_CLASS_MAP[effectName];
+  if (className) {
+    effectPreviewImg.parentElement.classList.add(className);
   }
 }
 
