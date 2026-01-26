@@ -1,0 +1,9 @@
+{
+  "skins": [
+    {
+      "id": "set2",
+      "label": "Festive Classic",
+      "path": "../assets/Set2"
+    }
+  ]
+}
