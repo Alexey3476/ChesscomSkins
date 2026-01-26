@@ -13,6 +13,11 @@ const EFFECT_SET_IDS = [
   "none"
 ];
 
+const SKIN_PREVIEW_BASE = {
+  set2: "../assets/Set2",
+  none: "../assets/Set2"
+};
+
 chrome.storage.sync.get(["enabled", "activeSkin", "activeEffect", "activeSet"], data => {
   toggle.checked = !!data.enabled;
   updateUI(toggle.checked);
@@ -29,7 +34,10 @@ chrome.storage.sync.get(["enabled", "activeSkin", "activeEffect", "activeSet"], 
     chrome.storage.sync.set({ activeSkin, activeEffect });
   }
 
-  if (activeSkin) setActiveSkinUI(activeSkin);
+  if (activeSkin) {
+    setActiveSkinUI(activeSkin);
+    updateEffectPreviews(activeSkin);
+  }
   if (activeEffect) setActiveEffectUI(activeEffect);
 });
 
@@ -43,6 +51,7 @@ toggle.addEventListener("change", () => {
       updateUI(true);
       setActiveSkinUI(data.activeSkin || null);
       setActiveEffectUI(data.activeEffect || null);
+      updateEffectPreviews(data.activeSkin || "set2");
     });
   }
 });
@@ -55,6 +64,7 @@ skinSets.forEach(set => {
 
     chrome.storage.sync.set({ activeSkin: setName }, () => {
       setActiveSkinUI(setName);
+      updateEffectPreviews(setName);
     });
   });
 });
@@ -89,5 +99,17 @@ function setActiveSkinUI(activeID) {
 function setActiveEffectUI(activeID) {
   effectSets.forEach(set => {
     set.classList.toggle("active", activeID && set.dataset.effect === activeID);
+  });
+}
+
+function updateEffectPreviews(activeSkin) {
+  const basePath = SKIN_PREVIEW_BASE[activeSkin] || SKIN_PREVIEW_BASE.set2;
+  effectSets.forEach(set => {
+    const previewPieces = (set.dataset.preview || "wq").split(" ");
+    const images = set.querySelectorAll("img");
+    images.forEach((img, index) => {
+      const piece = previewPieces[index] || previewPieces[0];
+      img.src = `${basePath}/${piece}.png`;
+    });
   });
 }
