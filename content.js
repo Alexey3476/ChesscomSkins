@@ -18,39 +18,62 @@ const EFFECT_DEFINITIONS = {
   "native-ember": {
     type: "filter",
     filter: "hue-rotate(-18deg) saturate(1.4) brightness(1.05)",
-    ringColor: "rgba(255,120,60,0.9)"
+    ringColor: "rgba(255,120,60,0.9)",
+    ringColorSoft: "rgba(255,120,60,0.35)",
+    ringGlow: "drop-shadow(0 0 18px rgba(255,120,60,0.65))"
   },
   "native-frost": {
     type: "filter",
     filter: "hue-rotate(190deg) saturate(1.35) brightness(1.1)",
-    ringColor: "rgba(110,190,255,0.9)"
+    ringColor: "rgba(110,190,255,0.9)",
+    ringColorSoft: "rgba(110,190,255,0.35)",
+    ringGlow: "drop-shadow(0 0 18px rgba(110,190,255,0.65))"
   },
   "native-neon": {
     type: "filter",
     filter: "hue-rotate(280deg) saturate(1.6) brightness(1.1)",
-    ringColor: "rgba(210,120,255,0.9)"
+    ringColor: "rgba(210,120,255,0.9)",
+    ringColorSoft: "rgba(210,120,255,0.35)",
+    ringGlow: "drop-shadow(0 0 18px rgba(210,120,255,0.7))"
   },
   "legendary-ember": {
     type: "filter",
     filter: "saturate(1.1) brightness(1.02)",
     ringColor: "rgba(255,130,70,0.95)",
-    ringGlow: "0 0 18px rgba(255,120,60,0.7)",
+    ringColorSoft: "rgba(255,130,70,0.45)",
+    ringGlow: "drop-shadow(0 0 22px rgba(255,120,60,0.75))",
     ringColorOverrides: {
-      wk: "rgba(255,210,120,0.95)",
-      wq: "rgba(255,160,80,0.95)",
-      bk: "rgba(120,180,255,0.95)",
-      bq: "rgba(150,120,255,0.95)"
+      wk: {
+        ringColor: "rgba(255,210,120,0.95)",
+        ringColorSoft: "rgba(255,210,120,0.45)",
+        ringGlow: "drop-shadow(0 0 22px rgba(255,210,120,0.75))"
+      },
+      wq: {
+        ringColor: "rgba(255,160,80,0.95)",
+        ringColorSoft: "rgba(255,160,80,0.45)",
+        ringGlow: "drop-shadow(0 0 22px rgba(255,160,80,0.75))"
+      },
+      bk: {
+        ringColor: "rgba(120,180,255,0.95)",
+        ringColorSoft: "rgba(120,180,255,0.45)",
+        ringGlow: "drop-shadow(0 0 22px rgba(120,180,255,0.75))"
+      },
+      bq: {
+        ringColor: "rgba(150,120,255,0.95)",
+        ringColorSoft: "rgba(150,120,255,0.45)",
+        ringGlow: "drop-shadow(0 0 22px rgba(150,120,255,0.75))"
+      }
     }
   },
   "minimal": {
     type: "filter",
     filter: "saturate(1.02)",
     ringColor: "rgba(255,255,255,0.9)",
-    ringOpacity: 0.75,
-    ringBorder: "2px",
-    ringInset: "12%",
-    ringAnimation: "ringSoft 1.6s ease-in-out infinite",
-    ringGlow: "0 0 12px rgba(255,255,255,0.55)"
+    ringColorSoft: "rgba(255,255,255,0.25)",
+    ringOpacity: 0.7,
+    ringInset: "-8%",
+    ringAnimation: "ringSoft 2.6s ease-in-out infinite",
+    ringGlow: "drop-shadow(0 0 12px rgba(255,255,255,0.45))"
   },
   "none": {
     type: "none"
@@ -156,7 +179,8 @@ function applyEffect(effectName, targetName) {
   const definition = EFFECT_DEFINITIONS[effectName];
   if (!definition || definition.type === "none") return;
 
-  const ringAnimation = definition.ringAnimation || "ringPulse 1.2s ease-in-out infinite";
+  const ringAnimation = definition.ringAnimation || "glowBreath 3.4s ease-in-out infinite";
+  const shimmerAnimation = definition.shimmerAnimation || "glowShimmer 4.2s ease-in-out infinite";
 
   const glowTargets = targetName === "royal"
     ? [".piece.wk", ".piece.wq", ".piece.bk", ".piece.bq"]
@@ -177,123 +201,138 @@ function applyEffect(effectName, targetName) {
     .piece,
     .promotion-piece {
       position: relative;
-      will-change: transform, filter;
       filter: var(--piece-filter, none);
+    }
+
+    .piece::after,
+    .promotion-piece::after {
+      content: "";
+      position: absolute;
+      inset: var(--ring-inset, -16%);
+      border-radius: 50%;
+      pointer-events: none;
+      opacity: 0;
+      transform: scale(0.9);
+      background: radial-gradient(circle,
+        var(--ring-color, rgba(255,120,60,0.9)) 0%,
+        var(--ring-color-soft, rgba(255,120,60,0.35)) 45%,
+        rgba(0,0,0,0) 70%);
+      filter: var(--ring-glow, drop-shadow(0 0 18px rgba(255,120,60,0.7)));
+      transition: opacity 0.2s ease;
     }
 
     ${glowTargetSelector} {
       filter: var(--piece-filter, none);
-      transition: filter 0.2s ease;
-      animation: glowPulse 3s ease-in-out infinite;
+    }
+
+    ${glowTargetSelected},
+    ${glowTargetSelectedSelf},
+    ${glowTargetLastMove},
+    ${glowTargetMove},
+    ${glowTargetHint},
+    ${glowTargetHighlight},
+    ${glowTargetCheck},
+    ${glowTargetCheckmate},
+    ${glowTargetMate},
+    ${glowTargetCapture} {
+      will-change: transform, opacity;
     }
 
     .captured .piece,
     .captured-piece,
     .captured-pieces .piece,
     [class*="captured"] .piece {
-      animation: none !important;
       filter: var(--piece-filter, none) !important;
     }
 
-    @keyframes glowPulse {
+    .captured .piece::after,
+    .captured-piece::after,
+    .captured-pieces .piece::after,
+    [class*="captured"] .piece::after {
+      animation: none !important;
+      opacity: 0 !important;
+    }
+
+    @keyframes glowBreath {
       0% {
-        filter: var(--piece-filter, none) drop-shadow(0 0 4px var(--ring-color, rgba(255,120,60,0.85)));
+        opacity: 0.35;
+        transform: scale(0.96);
       }
-      70% {
-        filter: var(--piece-filter, none)
-          drop-shadow(0 0 10px var(--ring-color, rgba(255,120,60,0.85)))
-          drop-shadow(0 0 18px var(--ring-color, rgba(255,120,60,0.6)));
+      60% {
+        opacity: 0.95;
+        transform: scale(1.08);
       }
       100% {
-        filter: var(--piece-filter, none) drop-shadow(0 0 6px var(--ring-color, rgba(255,120,60,0.85)));
+        opacity: 0.45;
+        transform: scale(1.01);
       }
     }
 
     @keyframes glowShimmer {
       0% {
-        filter: var(--piece-filter, none) drop-shadow(0 0 5px var(--ring-color, rgba(255,120,60,0.75)));
+        opacity: 0.55;
       }
       50% {
-        filter: var(--piece-filter, none)
-          drop-shadow(0 0 12px var(--ring-color, rgba(255,120,60,0.95)))
-          drop-shadow(0 0 22px var(--ring-color, rgba(255,120,60,0.7)));
+        opacity: 1;
       }
       100% {
-        filter: var(--piece-filter, none) drop-shadow(0 0 6px var(--ring-color, rgba(255,120,60,0.8)));
-      }
-    }
-
-    @keyframes ringPulse {
-      0% {
-        filter: var(--piece-filter, none) drop-shadow(0 0 4px var(--ring-color, rgba(255,120,60,0.8)));
-      }
-      70% {
-        filter: var(--piece-filter, none)
-          drop-shadow(0 0 10px var(--ring-color, rgba(255,120,60,0.9)))
-          drop-shadow(0 0 16px var(--ring-color, rgba(255,120,60,0.6)));
-      }
-      100% {
-        filter: var(--piece-filter, none) drop-shadow(0 0 6px var(--ring-color, rgba(255,120,60,0.8)));
+        opacity: 0.65;
       }
     }
 
     @keyframes ringSoft {
       0% {
-        filter: var(--piece-filter, none) drop-shadow(0 0 3px var(--ring-color, rgba(255,255,255,0.7)));
+        opacity: 0.45;
+        transform: scale(0.98);
       }
       100% {
-        filter: var(--piece-filter, none) drop-shadow(0 0 7px var(--ring-color, rgba(255,255,255,0.85)));
+        opacity: 0.75;
+        transform: scale(1.04);
       }
     }
 
     @keyframes fireworks {
       0% {
         transform: scale(0.96);
-        filter: var(--piece-filter, none) drop-shadow(0 0 6px rgba(255,210,80,0.7));
+        opacity: 0.55;
       }
       40% {
         transform: scale(1.08);
-        filter: var(--piece-filter, none)
-          drop-shadow(0 0 14px rgba(255,210,80,0.95))
-          drop-shadow(0 0 24px rgba(255,120,80,0.8));
+        opacity: 1;
       }
       100% {
         transform: scale(1.02);
-        filter: var(--piece-filter, none) drop-shadow(0 0 8px rgba(255,210,80,0.8));
+        opacity: 0.7;
       }
     }
 
     @keyframes checkPulse {
       0% {
         transform: scale(0.98);
-        filter: var(--piece-filter, none) drop-shadow(0 0 6px rgba(255,70,70,0.8));
+        opacity: 0.7;
       }
       50% {
         transform: scale(1.08);
-        filter: var(--piece-filter, none)
-          drop-shadow(0 0 14px rgba(255,70,70,0.95))
-          drop-shadow(0 0 22px rgba(255,70,70,0.7));
+        opacity: 1;
       }
       100% {
         transform: scale(1);
-        filter: var(--piece-filter, none) drop-shadow(0 0 8px rgba(255,70,70,0.85));
+        opacity: 0.8;
       }
     }
 
     @keyframes mateFlare {
       0% {
         transform: scale(0.92) rotate(0deg);
-        filter: var(--piece-filter, none) drop-shadow(0 0 8px rgba(255,200,60,0.9));
+        opacity: 0.7;
       }
       50% {
         transform: scale(1.15) rotate(6deg);
-        filter: var(--piece-filter, none)
-          drop-shadow(0 0 20px rgba(255,200,60,1))
-          drop-shadow(0 0 28px rgba(255,140,80,0.85));
+        opacity: 1;
       }
       100% {
         transform: scale(1) rotate(0deg);
-        filter: var(--piece-filter, none) drop-shadow(0 0 12px rgba(255,200,60,0.9));
+        opacity: 0.85;
       }
     }
 
@@ -301,32 +340,29 @@ function applyEffect(effectName, targetName) {
       0% {
         transform: scale(0.6);
         opacity: 0;
-        filter: var(--piece-filter, none) drop-shadow(0 0 0 rgba(255,120,60,0.7));
       }
       40% {
         transform: scale(1.05);
         opacity: 1;
-        filter: var(--piece-filter, none) drop-shadow(0 0 16px rgba(255,120,60,0.85));
       }
       100% {
         transform: scale(1.2);
         opacity: 0;
-        filter: var(--piece-filter, none) drop-shadow(0 0 28px rgba(255,120,60,0));
       }
     }
 
     @keyframes queenCapture {
       0% {
         transform: scale(1);
-        filter: var(--piece-filter, none) drop-shadow(0 0 4px rgba(255,190,90,0.7));
+        opacity: 0.6;
       }
       50% {
         transform: scale(1.08);
-        filter: var(--piece-filter, none) drop-shadow(0 0 12px rgba(255,190,90,1));
+        opacity: 1;
       }
       100% {
         transform: scale(1);
-        filter: var(--piece-filter, none) drop-shadow(0 0 6px rgba(255,190,90,0.8));
+        opacity: 0.7;
       }
     }
   `;
@@ -337,15 +373,31 @@ function applyEffect(effectName, targetName) {
       .promotion-piece {
         --piece-filter: ${definition.filter};
         --ring-color: ${definition.ringColor};
+        --ring-color-soft: ${definition.ringColorSoft || definition.ringColor};
+        --ring-glow: ${definition.ringGlow || "drop-shadow(0 0 18px rgba(255,120,60,0.7))"};
+        --ring-inset: ${definition.ringInset || "-16%"};
+        --ring-opacity: ${definition.ringOpacity || 0.85};
       }
     `;
 
     if (definition.ringColorOverrides) {
       Object.entries(definition.ringColorOverrides).forEach(([piece, color]) => {
+        if (typeof color === "string") {
+          css += `
+            .piece.${piece},
+            .promotion-piece.${piece} {
+              --ring-color: ${color};
+              --ring-color-soft: ${color};
+            }
+          `;
+          return;
+        }
         css += `
           .piece.${piece},
           .promotion-piece.${piece} {
-            --ring-color: ${color};
+            ${color.ringColor ? `--ring-color: ${color.ringColor};` : ""}
+            ${color.ringColorSoft ? `--ring-color-soft: ${color.ringColorSoft};` : ""}
+            ${color.ringGlow ? `--ring-glow: ${color.ringGlow};` : ""}
           }
         `;
       });
@@ -353,33 +405,42 @@ function applyEffect(effectName, targetName) {
   }
 
   css += `
-    ${glowTargetSelected},
-    ${glowTargetSelectedSelf},
-    ${glowTargetLastMove},
-    ${glowTargetMove},
-    ${glowTargetHint},
-    ${glowTargetHighlight} {
-      animation: ${ringAnimation}, glowShimmer 3.2s ease-in-out infinite;
+    ${glowTargetSelected}::after,
+    ${glowTargetSelectedSelf}::after,
+    ${glowTargetLastMove}::after,
+    ${glowTargetMove}::after,
+    ${glowTargetHint}::after,
+    ${glowTargetHighlight}::after {
+      opacity: var(--ring-opacity, 0.85);
+      animation: ${ringAnimation}, ${shimmerAnimation};
     }
 
-    ${glowTargetCheck} {
-      animation: checkPulse 1s ease-in-out infinite, glowShimmer 2.4s ease-in-out infinite;
-      --ring-color: rgba(255,70,70,0.9);
+    ${glowTargetCheck}::after {
+      opacity: 0.95;
+      animation: checkPulse 1.4s ease-in-out infinite;
+      --ring-color: rgba(255,70,70,0.95);
+      --ring-color-soft: rgba(255,70,70,0.45);
+      --ring-glow: drop-shadow(0 0 18px rgba(255,70,70,0.85));
     }
 
-    ${glowTargetCheckmate},
-    ${glowTargetMate} {
-      animation: mateFlare 1.4s ease-in-out infinite, fireworks 1.2s ease-out infinite;
+    ${glowTargetCheckmate}::after,
+    ${glowTargetMate}::after {
+      opacity: 1;
+      animation: mateFlare 1.6s ease-in-out infinite, fireworks 2.2s ease-out infinite;
       --ring-color: rgba(255,200,60,0.95);
+      --ring-color-soft: rgba(255,200,60,0.45);
+      --ring-glow: drop-shadow(0 0 22px rgba(255,200,60,0.85));
     }
 
-    ${glowTargetCapture} {
-      animation: captureBurst 0.9s ease-out;
+    ${glowTargetCapture}::after {
+      opacity: 0.9;
+      animation: captureBurst 1s ease-out;
     }
 
-    .captured-pieces .piece.wq,
-    .captured-pieces .piece.bq {
-      animation: queenCapture 1.4s ease-in-out 1;
+    .captured-pieces .piece.wq::after,
+    .captured-pieces .piece.bq::after {
+      opacity: 0.9;
+      animation: queenCapture 1.6s ease-in-out 1;
     }
   `;
 
@@ -476,6 +537,9 @@ chrome.storage.onChanged.addListener((changes) => {
 let lastOverlayAt = 0;
 let hasShownGoodLuck = false;
 let goodLuckObserver = null;
+let lastGoodLuckGameId = null;
+const GOOD_LUCK_SESSION_KEY = "chesscomskins.goodLuckGameId";
+const GOOD_LUCK_SESSION_ONCE_KEY = "chesscomskins.goodLuckShown";
 
 function ensureOverlayStyles() {
   if (overlayStyleTag) return;
@@ -522,17 +586,47 @@ function showGoodLuckOverlay() {
   document.body.appendChild(overlay);
   setTimeout(() => overlay.remove(), 3400);
   hasShownGoodLuck = true;
+  if (lastGoodLuckGameId) {
+    sessionStorage.setItem(GOOD_LUCK_SESSION_KEY, lastGoodLuckGameId);
+  } else {
+    sessionStorage.setItem(GOOD_LUCK_SESSION_ONCE_KEY, "true");
+  }
   if (goodLuckObserver) {
     goodLuckObserver.disconnect();
     goodLuckObserver = null;
   }
 }
 
+function getCurrentGameId() {
+  const pathMatch = window.location.pathname.match(/\/game\/(?:live|daily|computer)?\/?(\d+)/);
+  if (pathMatch && pathMatch[1]) return pathMatch[1];
+  const dataMatch = document.querySelector("[data-game-id]");
+  if (dataMatch && dataMatch.dataset.gameId) return dataMatch.dataset.gameId;
+  return null;
+}
+
+function isAnalysisPage() {
+  return window.location.pathname.includes("/analysis");
+}
+
 function watchForGameStart() {
-  if (window.location.pathname.includes("/analysis")) return;
+  if (isAnalysisPage()) return;
   const maybeShow = () => {
     const board = document.querySelector(".board, .board-area, .board-container, chess-board");
-    if (board) showGoodLuckOverlay();
+    if (!board) return;
+    const gameId = getCurrentGameId();
+    if (gameId) {
+      lastGoodLuckGameId = gameId;
+      const storedGameId = sessionStorage.getItem(GOOD_LUCK_SESSION_KEY);
+      if (storedGameId === gameId) {
+        hasShownGoodLuck = true;
+        return;
+      }
+    } else if (sessionStorage.getItem(GOOD_LUCK_SESSION_ONCE_KEY)) {
+      hasShownGoodLuck = true;
+      return;
+    }
+    showGoodLuckOverlay();
   };
 
   maybeShow();
