@@ -114,6 +114,9 @@ button:active {
   padding: 12px;
   border-radius: 16px;
   background: #f0c9b6;
+  overflow: visible;
+  position: relative;
+  z-index: 1;
 }
 
 .effect-item {
@@ -130,6 +133,7 @@ button:active {
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   font: inherit;
+  overflow: visible;
 }
 
 .effect-item::before {
@@ -160,6 +164,7 @@ button:active {
   pointer-events: none;
   transition: opacity 0.2s ease, transform 0.2s ease;
   white-space: nowrap;
+  z-index: 3;
 }
 
 .effect-item:hover::after {

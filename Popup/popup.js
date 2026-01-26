@@ -15,19 +15,21 @@ const toggle = document.getElementById("toggle");
 const effectsPreview = document.getElementById("effects-preview");
 const skinList = document.getElementById("skin-list");
 const selectableItems = new Set();
-const activeState = { activeSkin: null, activeEffect: null };
+const activeState = { activeSkin: null, activeEffect: null, activeSkinPath: null };
 
 init();
 
 function init() {
   renderEffects();
   loadSkins();
-  chrome.storage.sync.get(["enabled", "activeSet", "activeSkin", "activeEffect"], data => {
+  chrome.storage.sync.get(["enabled", "activeSet", "activeSkin", "activeEffect", "activeSkinPath"], data => {
     toggle.checked = !!data.enabled;
     updateUI(toggle.checked);
     activeState.activeSkin = data.activeSkin || data.activeSet;
     activeState.activeEffect = data.activeEffect || data.activeSet;
+    activeState.activeSkinPath = data.activeSkinPath || null;
     setActiveUI(activeState);
+    updateEffectPreviewSkins(activeState.activeSkinPath);
   });
 }
 
@@ -58,8 +60,12 @@ function renderEffects() {
 
     button.addEventListener("click", () => {
       if (!toggle.checked) return;
-      chrome.storage.sync.set({ activeEffect: effect.id, activeSet: effect.id }, () => {
-        setActiveUI({ activeEffect: effect.id });
+      const isActive = activeState.activeEffect === effect.id;
+      const nextEffect = isActive ? "none" : effect.id;
+      const nextSet = isActive ? null : effect.id;
+      chrome.storage.sync.set({ activeEffect: nextEffect, activeSet: nextSet }, () => {
+        activeState.activeEffect = nextEffect === "none" ? null : nextEffect;
+        setActiveUI({ activeEffect: activeState.activeEffect });
       });
     });
 
@@ -92,9 +98,18 @@ async function loadSkins() {
     button.textContent = skin.label;
     button.addEventListener("click", () => {
       if (!toggle.checked) return;
+      const isActive = activeState.activeSkin === skin.id;
+      const nextSkin = isActive ? "none" : skin.id;
+      const nextPath = isActive ? null : skin.path;
+      const nextSet = isActive ? null : skin.id;
       chrome.storage.sync.set(
-        { activeSkin: skin.id, activeSkinPath: skin.path, activeSet: skin.id },
-        () => setActiveUI({ activeSkin: skin.id })
+        { activeSkin: nextSkin, activeSkinPath: nextPath, activeSet: nextSet },
+        () => {
+          activeState.activeSkin = nextSkin === "none" ? null : nextSkin;
+          activeState.activeSkinPath = nextPath;
+          setActiveUI({ activeSkin: activeState.activeSkin });
+          updateEffectPreviewSkins(activeState.activeSkinPath);
+        }
       );
     });
 
@@ -134,6 +149,13 @@ function setActiveUI({ activeSkin, activeEffect }) {
   });
 }
 
+function updateEffectPreviewSkins(skinPath) {
+  const resolvedPath = skinPath || "assets/Set2";
+  effectsPreview.querySelectorAll("img").forEach((img) => {
+    img.src = chrome.runtime.getURL(`${resolvedPath}/wk.png`);
+  });
+}
+
 function listAssetDirectories() {
   return new Promise((resolve) => {
     chrome.runtime.getPackageDirectoryEntry((root) => {
@@ -165,6 +187,9 @@ function directoryHasPieces(dirEntry) {
 }
 
 function formatLabel(name) {
+  if (name.toLowerCase() === "set2") {
+    return "Новогодний отвал башки";
+  }
   return name
     .replace(/[-_]+/g, " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());

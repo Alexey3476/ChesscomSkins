@@ -20,48 +20,48 @@ const EFFECT_DEFINITIONS = {
     filter: "hue-rotate(-18deg) saturate(1.4) brightness(1.05)",
     ringColor: "rgba(255,120,60,0.9)",
     ringColorSoft: "rgba(255,120,60,0.35)",
-    ringGlow: "drop-shadow(0 0 18px rgba(255,120,60,0.65))"
+    ringGlow: "drop-shadow(0 0 26px rgba(255,120,60,0.75))"
   },
   "native-frost": {
     type: "filter",
     filter: "hue-rotate(190deg) saturate(1.35) brightness(1.1)",
     ringColor: "rgba(110,190,255,0.9)",
     ringColorSoft: "rgba(110,190,255,0.35)",
-    ringGlow: "drop-shadow(0 0 18px rgba(110,190,255,0.65))"
+    ringGlow: "drop-shadow(0 0 26px rgba(110,190,255,0.75))"
   },
   "native-neon": {
     type: "filter",
     filter: "hue-rotate(280deg) saturate(1.6) brightness(1.1)",
     ringColor: "rgba(210,120,255,0.9)",
     ringColorSoft: "rgba(210,120,255,0.35)",
-    ringGlow: "drop-shadow(0 0 18px rgba(210,120,255,0.7))"
+    ringGlow: "drop-shadow(0 0 28px rgba(210,120,255,0.8))"
   },
   "legendary-ember": {
     type: "filter",
     filter: "saturate(1.1) brightness(1.02)",
     ringColor: "rgba(255,130,70,0.95)",
     ringColorSoft: "rgba(255,130,70,0.45)",
-    ringGlow: "drop-shadow(0 0 22px rgba(255,120,60,0.75))",
+    ringGlow: "drop-shadow(0 0 30px rgba(255,120,60,0.85))",
     ringColorOverrides: {
       wk: {
         ringColor: "rgba(255,210,120,0.95)",
         ringColorSoft: "rgba(255,210,120,0.45)",
-        ringGlow: "drop-shadow(0 0 22px rgba(255,210,120,0.75))"
+        ringGlow: "drop-shadow(0 0 30px rgba(255,210,120,0.85))"
       },
       wq: {
         ringColor: "rgba(255,160,80,0.95)",
         ringColorSoft: "rgba(255,160,80,0.45)",
-        ringGlow: "drop-shadow(0 0 22px rgba(255,160,80,0.75))"
+        ringGlow: "drop-shadow(0 0 30px rgba(255,160,80,0.85))"
       },
       bk: {
         ringColor: "rgba(120,180,255,0.95)",
         ringColorSoft: "rgba(120,180,255,0.45)",
-        ringGlow: "drop-shadow(0 0 22px rgba(120,180,255,0.75))"
+        ringGlow: "drop-shadow(0 0 30px rgba(120,180,255,0.85))"
       },
       bq: {
         ringColor: "rgba(150,120,255,0.95)",
         ringColorSoft: "rgba(150,120,255,0.45)",
-        ringGlow: "drop-shadow(0 0 22px rgba(150,120,255,0.75))"
+        ringGlow: "drop-shadow(0 0 30px rgba(150,120,255,0.85))"
       }
     }
   },
@@ -70,10 +70,10 @@ const EFFECT_DEFINITIONS = {
     filter: "saturate(1.02)",
     ringColor: "rgba(255,255,255,0.9)",
     ringColorSoft: "rgba(255,255,255,0.25)",
-    ringOpacity: 0.7,
-    ringInset: "-8%",
+    ringOpacity: 0.8,
+    ringInset: "-10%",
     ringAnimation: "ringSoft 2.6s ease-in-out infinite",
-    ringGlow: "drop-shadow(0 0 12px rgba(255,255,255,0.45))"
+    ringGlow: "drop-shadow(0 0 16px rgba(255,255,255,0.6))"
   },
   "none": {
     type: "none"
@@ -208,7 +208,7 @@ function applyEffect(effectName, targetName) {
     .promotion-piece::after {
       content: "";
       position: absolute;
-      inset: var(--ring-inset, -16%);
+      inset: var(--ring-inset, -20%);
       border-radius: 50%;
       pointer-events: none;
       opacity: 0;
@@ -223,6 +223,11 @@ function applyEffect(effectName, targetName) {
 
     ${glowTargetSelector} {
       filter: var(--piece-filter, none);
+    }
+
+    ${glowTargetSelector}::after {
+      opacity: calc(var(--ring-opacity, 0.9) * 0.9);
+      animation: ${ringAnimation};
     }
 
     ${glowTargetSelected},
@@ -374,9 +379,9 @@ function applyEffect(effectName, targetName) {
         --piece-filter: ${definition.filter};
         --ring-color: ${definition.ringColor};
         --ring-color-soft: ${definition.ringColorSoft || definition.ringColor};
-        --ring-glow: ${definition.ringGlow || "drop-shadow(0 0 18px rgba(255,120,60,0.7))"};
-        --ring-inset: ${definition.ringInset || "-16%"};
-        --ring-opacity: ${definition.ringOpacity || 0.85};
+        --ring-glow: ${definition.ringGlow || "drop-shadow(0 0 26px rgba(255,120,60,0.8))"};
+        --ring-inset: ${definition.ringInset || "-20%"};
+        --ring-opacity: ${definition.ringOpacity || 0.9};
       }
     `;
 
