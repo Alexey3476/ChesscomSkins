@@ -20,48 +20,48 @@ const EFFECT_DEFINITIONS = {
     filter: "hue-rotate(-18deg) saturate(1.4) brightness(1.05)",
     ringColor: "rgba(255,120,60,0.9)",
     ringColorSoft: "rgba(255,120,60,0.35)",
-    ringGlow: "drop-shadow(0 0 26px rgba(255,120,60,0.75))"
+    ringSize: "20px",
+    ringSizeStrong: "34px"
   },
   "native-frost": {
     type: "filter",
     filter: "hue-rotate(190deg) saturate(1.35) brightness(1.1)",
     ringColor: "rgba(110,190,255,0.9)",
     ringColorSoft: "rgba(110,190,255,0.35)",
-    ringGlow: "drop-shadow(0 0 26px rgba(110,190,255,0.75))"
+    ringSize: "20px",
+    ringSizeStrong: "34px"
   },
   "native-neon": {
     type: "filter",
     filter: "hue-rotate(280deg) saturate(1.6) brightness(1.1)",
     ringColor: "rgba(210,120,255,0.9)",
     ringColorSoft: "rgba(210,120,255,0.35)",
-    ringGlow: "drop-shadow(0 0 28px rgba(210,120,255,0.8))"
+    ringSize: "22px",
+    ringSizeStrong: "36px"
   },
   "legendary-ember": {
     type: "filter",
     filter: "saturate(1.1) brightness(1.02)",
     ringColor: "rgba(255,130,70,0.95)",
     ringColorSoft: "rgba(255,130,70,0.45)",
-    ringGlow: "drop-shadow(0 0 30px rgba(255,120,60,0.85))",
+    ringSize: "22px",
+    ringSizeStrong: "38px",
     ringColorOverrides: {
       wk: {
         ringColor: "rgba(255,210,120,0.95)",
-        ringColorSoft: "rgba(255,210,120,0.45)",
-        ringGlow: "drop-shadow(0 0 30px rgba(255,210,120,0.85))"
+        ringColorSoft: "rgba(255,210,120,0.45)"
       },
       wq: {
         ringColor: "rgba(255,160,80,0.95)",
-        ringColorSoft: "rgba(255,160,80,0.45)",
-        ringGlow: "drop-shadow(0 0 30px rgba(255,160,80,0.85))"
+        ringColorSoft: "rgba(255,160,80,0.45)"
       },
       bk: {
         ringColor: "rgba(120,180,255,0.95)",
-        ringColorSoft: "rgba(120,180,255,0.45)",
-        ringGlow: "drop-shadow(0 0 30px rgba(120,180,255,0.85))"
+        ringColorSoft: "rgba(120,180,255,0.45)"
       },
       bq: {
         ringColor: "rgba(150,120,255,0.95)",
-        ringColorSoft: "rgba(150,120,255,0.45)",
-        ringGlow: "drop-shadow(0 0 30px rgba(150,120,255,0.85))"
+        ringColorSoft: "rgba(150,120,255,0.45)"
       }
     }
   },
@@ -70,10 +70,8 @@ const EFFECT_DEFINITIONS = {
     filter: "saturate(1.02)",
     ringColor: "rgba(255,255,255,0.9)",
     ringColorSoft: "rgba(255,255,255,0.25)",
-    ringOpacity: 0.8,
-    ringInset: "-10%",
-    ringAnimation: "ringSoft 2.6s ease-in-out infinite",
-    ringGlow: "drop-shadow(0 0 16px rgba(255,255,255,0.6))"
+    ringSize: "14px",
+    ringSizeStrong: "24px"
   },
   "none": {
     type: "none"
@@ -179,9 +177,6 @@ function applyEffect(effectName, targetName) {
   const definition = EFFECT_DEFINITIONS[effectName];
   if (!definition || definition.type === "none") return;
 
-  const ringAnimation = definition.ringAnimation || "glowBreath 3.4s ease-in-out infinite";
-  const shimmerAnimation = definition.shimmerAnimation || "glowShimmer 4.2s ease-in-out infinite";
-
   const glowTargets = targetName === "royal"
     ? [".piece.wk", ".piece.wq", ".piece.bk", ".piece.bq"]
     : [".piece", ".promotion-piece"];
@@ -198,49 +193,10 @@ function applyEffect(effectName, targetName) {
   const glowTargetCapture = glowTargets.map((target) => `.capture ${target}`).join(", ");
 
   let css = `
-    .piece,
-    .promotion-piece {
-      position: relative;
-      filter: var(--piece-filter, none);
-    }
-
-    .piece::after,
-    .promotion-piece::after {
-      content: "";
-      position: absolute;
-      inset: var(--ring-inset, -20%);
-      border-radius: 50%;
-      pointer-events: none;
-      opacity: 0;
-      transform: scale(0.9);
-      background: radial-gradient(circle,
-        var(--ring-color, rgba(255,120,60,0.9)) 0%,
-        var(--ring-color-soft, rgba(255,120,60,0.35)) 45%,
-        rgba(0,0,0,0) 70%);
-      filter: var(--ring-glow, drop-shadow(0 0 18px rgba(255,120,60,0.7)));
-      transition: opacity 0.2s ease;
-    }
-
     ${glowTargetSelector} {
-      filter: var(--piece-filter, none);
-    }
-
-    ${glowTargetSelector}::after {
-      opacity: calc(var(--ring-opacity, 0.9) * 0.9);
-      animation: ${ringAnimation};
-    }
-
-    ${glowTargetSelected},
-    ${glowTargetSelectedSelf},
-    ${glowTargetLastMove},
-    ${glowTargetMove},
-    ${glowTargetHint},
-    ${glowTargetHighlight},
-    ${glowTargetCheck},
-    ${glowTargetCheckmate},
-    ${glowTargetMate},
-    ${glowTargetCapture} {
-      will-change: transform, opacity;
+      filter: var(--piece-filter, none)
+        drop-shadow(0 0 var(--ring-size, 18px) var(--ring-color, rgba(255,120,60,0.9)))
+        drop-shadow(0 0 var(--ring-size-strong, 30px) var(--ring-color-soft, rgba(255,120,60,0.35)));
     }
 
     .captured .piece,
@@ -248,127 +204,6 @@ function applyEffect(effectName, targetName) {
     .captured-pieces .piece,
     [class*="captured"] .piece {
       filter: var(--piece-filter, none) !important;
-    }
-
-    .captured .piece::after,
-    .captured-piece::after,
-    .captured-pieces .piece::after,
-    [class*="captured"] .piece::after {
-      animation: none !important;
-      opacity: 0 !important;
-    }
-
-    @keyframes glowBreath {
-      0% {
-        opacity: 0.35;
-        transform: scale(0.96);
-      }
-      60% {
-        opacity: 0.95;
-        transform: scale(1.08);
-      }
-      100% {
-        opacity: 0.45;
-        transform: scale(1.01);
-      }
-    }
-
-    @keyframes glowShimmer {
-      0% {
-        opacity: 0.55;
-      }
-      50% {
-        opacity: 1;
-      }
-      100% {
-        opacity: 0.65;
-      }
-    }
-
-    @keyframes ringSoft {
-      0% {
-        opacity: 0.45;
-        transform: scale(0.98);
-      }
-      100% {
-        opacity: 0.75;
-        transform: scale(1.04);
-      }
-    }
-
-    @keyframes fireworks {
-      0% {
-        transform: scale(0.96);
-        opacity: 0.55;
-      }
-      40% {
-        transform: scale(1.08);
-        opacity: 1;
-      }
-      100% {
-        transform: scale(1.02);
-        opacity: 0.7;
-      }
-    }
-
-    @keyframes checkPulse {
-      0% {
-        transform: scale(0.98);
-        opacity: 0.7;
-      }
-      50% {
-        transform: scale(1.08);
-        opacity: 1;
-      }
-      100% {
-        transform: scale(1);
-        opacity: 0.8;
-      }
-    }
-
-    @keyframes mateFlare {
-      0% {
-        transform: scale(0.92) rotate(0deg);
-        opacity: 0.7;
-      }
-      50% {
-        transform: scale(1.15) rotate(6deg);
-        opacity: 1;
-      }
-      100% {
-        transform: scale(1) rotate(0deg);
-        opacity: 0.85;
-      }
-    }
-
-    @keyframes captureBurst {
-      0% {
-        transform: scale(0.6);
-        opacity: 0;
-      }
-      40% {
-        transform: scale(1.05);
-        opacity: 1;
-      }
-      100% {
-        transform: scale(1.2);
-        opacity: 0;
-      }
-    }
-
-    @keyframes queenCapture {
-      0% {
-        transform: scale(1);
-        opacity: 0.6;
-      }
-      50% {
-        transform: scale(1.08);
-        opacity: 1;
-      }
-      100% {
-        transform: scale(1);
-        opacity: 0.7;
-      }
     }
   `;
 
@@ -379,9 +214,8 @@ function applyEffect(effectName, targetName) {
         --piece-filter: ${definition.filter};
         --ring-color: ${definition.ringColor};
         --ring-color-soft: ${definition.ringColorSoft || definition.ringColor};
-        --ring-glow: ${definition.ringGlow || "drop-shadow(0 0 26px rgba(255,120,60,0.8))"};
-        --ring-inset: ${definition.ringInset || "-20%"};
-        --ring-opacity: ${definition.ringOpacity || 0.9};
+        --ring-size: ${definition.ringSize || "18px"};
+        --ring-size-strong: ${definition.ringSizeStrong || "30px"};
       }
     `;
 
@@ -410,42 +244,40 @@ function applyEffect(effectName, targetName) {
   }
 
   css += `
-    ${glowTargetSelected}::after,
-    ${glowTargetSelectedSelf}::after,
-    ${glowTargetLastMove}::after,
-    ${glowTargetMove}::after,
-    ${glowTargetHint}::after,
-    ${glowTargetHighlight}::after {
-      opacity: var(--ring-opacity, 0.85);
-      animation: ${ringAnimation}, ${shimmerAnimation};
+    ${glowTargetSelected},
+    ${glowTargetSelectedSelf},
+    ${glowTargetLastMove},
+    ${glowTargetMove},
+    ${glowTargetHint},
+    ${glowTargetHighlight} {
+      --ring-size: 22px;
+      --ring-size-strong: 36px;
     }
 
-    ${glowTargetCheck}::after {
-      opacity: 0.95;
-      animation: checkPulse 1.4s ease-in-out infinite;
+    ${glowTargetCheck} {
       --ring-color: rgba(255,70,70,0.95);
       --ring-color-soft: rgba(255,70,70,0.45);
-      --ring-glow: drop-shadow(0 0 18px rgba(255,70,70,0.85));
+      --ring-size: 24px;
+      --ring-size-strong: 38px;
     }
 
-    ${glowTargetCheckmate}::after,
-    ${glowTargetMate}::after {
-      opacity: 1;
-      animation: mateFlare 1.6s ease-in-out infinite, fireworks 2.2s ease-out infinite;
+    ${glowTargetCheckmate},
+    ${glowTargetMate} {
       --ring-color: rgba(255,200,60,0.95);
       --ring-color-soft: rgba(255,200,60,0.45);
-      --ring-glow: drop-shadow(0 0 22px rgba(255,200,60,0.85));
+      --ring-size: 26px;
+      --ring-size-strong: 42px;
     }
 
-    ${glowTargetCapture}::after {
-      opacity: 0.9;
-      animation: captureBurst 1s ease-out;
+    ${glowTargetCapture} {
+      --ring-size: 24px;
+      --ring-size-strong: 40px;
     }
 
-    .captured-pieces .piece.wq::after,
-    .captured-pieces .piece.bq::after {
-      opacity: 0.9;
-      animation: queenCapture 1.6s ease-in-out 1;
+    .captured-pieces .piece.wq,
+    .captured-pieces .piece.bq {
+      --ring-size: 20px;
+      --ring-size-strong: 32px;
     }
   `;
 

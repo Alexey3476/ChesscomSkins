@@ -144,7 +144,6 @@ button:active {
   background: radial-gradient(circle, var(--glow-color) 0%, var(--glow-soft) 45%, rgba(0, 0, 0, 0) 70%);
   opacity: 0.8;
   filter: var(--glow-filter);
-  animation: var(--glow-animation, previewBreath 3.4s ease-in-out infinite);
 }
 
 .effect-item::after {
@@ -248,18 +247,6 @@ button:active {
   --glow-color: rgba(255, 255, 255, 0.9);
   --glow-soft: rgba(255, 255, 255, 0.25);
   --glow-filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.45));
-  --glow-animation: previewSoft 2.8s ease-in-out infinite;
-}
-
-@keyframes previewSoft {
-  0% {
-    opacity: 0.5;
-    transform: scale(0.98);
-  }
-  100% {
-    opacity: 0.75;
-    transform: scale(1.04);
-  }
 }
 
 /* Toggle */
