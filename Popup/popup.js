@@ -1,10 +1,14 @@
 
 const toggle = document.getElementById("toggle");
-const skinSets = document.querySelectorAll("[data-skin]");
-const effectSets = document.querySelectorAll("[data-effect]");
+const skinList = document.getElementById("skin-list");
+const effectList = document.getElementById("effect-list");
+const effectPreviewImg = document.getElementById("effect-preview-img");
+const effectPreviewLabel = document.getElementById("effect-preview-label");
+const skinSets = [];
+const effectSets = Array.from(effectList.querySelectorAll("[data-effect]"));
 const targetSets = document.querySelectorAll("[data-target]");
 
-const SKIN_SET_IDS = ["set2", "none"];
+const SKIN_SET_IDS = [];
 const EFFECT_SET_IDS = [
   "native-ember",
   "native-frost",
@@ -15,20 +19,71 @@ const EFFECT_SET_IDS = [
 ];
 const TARGET_IDS = ["all", "royal"];
 
-const SKIN_PREVIEW_BASE = {
-  set2: "../assets/Set2",
-  none: "../assets/Set2"
-};
+const SKIN_PREVIEW_BASE = {};
 
-chrome.storage.sync.get(
-  ["enabled", "activeSkin", "activeEffect", "activeTarget", "activeSet"],
-  data => {
-  toggle.checked = !!data.enabled;
-  updateUI(toggle.checked);
+function renderSkins(skins) {
+  skinList.innerHTML = "";
+  skins.forEach((skin) => {
+    const wrapper = document.createElement("div");
+    wrapper.className = "set festive disabled";
+    wrapper.dataset.skin = skin.id;
+    wrapper.dataset.path = skin.path;
+
+    const button = document.createElement("button");
+    button.textContent = skin.label;
+    button.title = skin.label;
+
+    const preview = document.createElement("div");
+    preview.className = "preview dark";
+
+    const previewPieces = ["wk","wq","wr","wb","wn","wp","bk","bq","br","bb","bn","bp"];
+    previewPieces.forEach((piece) => {
+      const img = document.createElement("img");
+      img.src = `${skin.path}/${piece}.png`;
+      img.title = skin.label;
+      preview.appendChild(img);
+    });
+
+    wrapper.appendChild(button);
+    wrapper.appendChild(preview);
+    skinList.appendChild(wrapper);
+
+    SKIN_SET_IDS.push(skin.id);
+    SKIN_PREVIEW_BASE[skin.id] = skin.path;
+    skinSets.push(wrapper);
+  });
+}
+
+async function loadSkins() {
+  try {
+    const response = await fetch("../assets/skins.json");
+    if (!response.ok) throw new Error("skins.json not found");
+    const data = await response.json();
+    if (Array.isArray(data.skins)) {
+      renderSkins(data.skins);
+      bindSkinHandlers();
+      initState();
+    }
+  } catch (error) {
+    renderSkins([
+      { id: "set2", label: "Festive Classic", path: "../assets/Set2" }
+    ]);
+    bindSkinHandlers();
+    initState();
+  }
+}
+
+function initState() {
+  chrome.storage.sync.get(
+    ["enabled", "activeSkin", "activeEffect", "activeTarget", "activeSkinPath", "activeSet"],
+    data => {
+    toggle.checked = !!data.enabled;
+    updateUI(toggle.checked);
 
   let activeSkin = data.activeSkin;
   let activeEffect = data.activeEffect;
   let activeTarget = data.activeTarget || "all";
+  const activeSkinPath = data.activeSkinPath;
 
   if (data.activeSet && !activeSkin && !activeEffect) {
     if (SKIN_SET_IDS.includes(data.activeSet)) {
@@ -41,48 +96,57 @@ chrome.storage.sync.get(
 
   if (activeSkin) {
     setActiveSkinUI(activeSkin);
-    updateEffectPreviews(activeSkin);
+    updateEffectPreviews(activeSkin, activeSkinPath);
   }
-  if (activeEffect) setActiveEffectUI(activeEffect);
-  if (activeTarget) setActiveTargetUI(activeTarget);
-});
+  if (activeEffect) {
+    setActiveEffectUI(activeEffect);
+    const activeButton = effectList.querySelector(`[data-effect="${activeEffect}"]`);
+    if (activeButton) updateEffectPreviewLabel(activeButton.textContent.trim(), true);
+  }
+    if (activeTarget) setActiveTargetUI(activeTarget);
+  });
+}
 
 toggle.addEventListener("change", () => {
   if (!toggle.checked) {
     chrome.storage.sync.set({ enabled: false });
     updateUI(false);
   } else {
-    chrome.storage.sync.get(["activeSkin", "activeEffect", "activeTarget"], (data) => {
+    chrome.storage.sync.get(["activeSkin", "activeEffect", "activeTarget", "activeSkinPath"], (data) => {
       chrome.storage.sync.set({ enabled: true });
       updateUI(true);
       setActiveSkinUI(data.activeSkin || null);
       setActiveEffectUI(data.activeEffect || null);
       setActiveTargetUI(data.activeTarget || "all");
-      updateEffectPreviews(data.activeSkin || "set2");
+      updateEffectPreviews(data.activeSkin || "set2", data.activeSkinPath);
     });
   }
 });
 
-skinSets.forEach(set => {
-  const setName = set.dataset.skin;
+function bindSkinHandlers() {
+  skinSets.forEach(set => {
+    const setName = set.dataset.skin;
+    const setPath = set.dataset.path;
 
-  set.querySelector("button").addEventListener("click", () => {
-    if (!toggle.checked) return;
+    set.querySelector("button").addEventListener("click", () => {
+      if (!toggle.checked) return;
 
-    const isActive = set.classList.contains("active");
-    const nextSkin = isActive ? "none" : setName;
+      const isActive = set.classList.contains("active");
+      const nextSkin = isActive ? "none" : setName;
+      const nextPath = isActive ? null : setPath;
 
-    chrome.storage.sync.set({ activeSkin: nextSkin }, () => {
-      setActiveSkinUI(isActive ? null : setName);
-      updateEffectPreviews(nextSkin === "none" ? "set2" : nextSkin);
+      chrome.storage.sync.set({ activeSkin: nextSkin, activeSkinPath: nextPath }, () => {
+        setActiveSkinUI(isActive ? null : setName);
+        updateEffectPreviews(nextSkin === "none" ? "set2" : nextSkin, nextPath);
+      });
     });
   });
-});
+}
 
 effectSets.forEach(set => {
   const setName = set.dataset.effect;
 
-  set.querySelector("button").addEventListener("click", () => {
+  set.addEventListener("click", () => {
     if (!toggle.checked) return;
 
     const isActive = set.classList.contains("active");
@@ -90,7 +154,16 @@ effectSets.forEach(set => {
 
     chrome.storage.sync.set({ activeEffect: nextEffect }, () => {
       setActiveEffectUI(isActive ? null : setName);
+      updateEffectPreviewLabel(setName, !isActive);
     });
+  });
+
+  set.addEventListener("mouseenter", () => {
+    const label = set.textContent.trim();
+    updateEffectPreviewLabel(label, false);
+  });
+  set.addEventListener("mouseleave", () => {
+    updateEffectPreviewLabel(null, false);
   });
 });
 
@@ -136,16 +209,22 @@ function setActiveTargetUI(activeID) {
   });
 }
 
-function updateEffectPreviews(activeSkin) {
-  const basePath = SKIN_PREVIEW_BASE[activeSkin] || SKIN_PREVIEW_BASE.set2;
-  effectSets.forEach(set => {
-    const previewPieces = (set.dataset.preview || "wq").split(" ");
-    const images = set.querySelectorAll("img");
-    const label = set.querySelector("button")?.textContent?.trim() || "";
-    images.forEach((img, index) => {
-      const piece = previewPieces[index] || previewPieces[0];
-      img.src = `${basePath}/${piece}.png`;
-      if (label) img.title = label;
-    });
-  });
+function updateEffectPreviews(activeSkin, activeSkinPath) {
+  const basePath = activeSkinPath || SKIN_PREVIEW_BASE[activeSkin] || SKIN_PREVIEW_BASE.set2;
+  effectPreviewImg.src = `${basePath}/wk.png`;
+  effectPreviewImg.title = effectPreviewLabel.textContent;
 }
+
+function updateEffectPreviewLabel(label, force) {
+  if (!label) {
+    effectPreviewLabel.textContent = "Glow preview";
+    effectPreviewImg.title = "Glow preview";
+    return;
+  }
+  if (force || label) {
+    effectPreviewLabel.textContent = label;
+    effectPreviewImg.title = label;
+  }
+}
+
+loadSkins();

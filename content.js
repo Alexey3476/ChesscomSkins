@@ -64,22 +64,29 @@ let lastAppliedEffect = null;
 let lastAppliedTarget = null;
 let overlayStyleTag = null;
 let skinsEnabled = false;
+let activeSkinPath = null;
+let capturedObserver = null;
 
-function applySkin(skinName) {
-  if (lastAppliedSkin === skinName) return;
+function applySkin(skinName, skinPath) {
+  if (lastAppliedSkin === skinName && activeSkinPath === skinPath) return;
   lastAppliedSkin = skinName;
 
   if (skinStyleTag) skinStyleTag.remove();
-  if (!skinName || skinName === "none") return;
+  if (!skinName || skinName === "none") {
+    activeSkinPath = null;
+    return;
+  }
 
   skinStyleTag = document.createElement("style");
   const definition = SKIN_DEFINITIONS[skinName];
-  if (!definition || definition.type === "none") return;
+  if ((!definition || definition.type === "none") && !skinPath) return;
 
   let css = "";
-  if (definition.type === "image") {
+  const resolvedPath = skinPath || definition.path;
+  if (resolvedPath) {
+    activeSkinPath = resolvedPath;
     PIECES.forEach(piece => {
-      const url = chrome.runtime.getURL(`${definition.path}/${piece}.png`);
+      const url = chrome.runtime.getURL(`${resolvedPath}/${piece}.png`);
       css += `
         .piece.${piece},
         .promotion-piece.${piece},
@@ -103,6 +110,38 @@ function applySkin(skinName) {
 
   skinStyleTag.textContent = css;
   document.head.appendChild(skinStyleTag);
+  updateCapturedImages();
+  ensureCapturedObserver();
+}
+
+function ensureCapturedObserver() {
+  if (capturedObserver) return;
+  capturedObserver = new MutationObserver(() => updateCapturedImages());
+  capturedObserver.observe(document.body, { childList: true, subtree: true });
+}
+
+function updateCapturedImages() {
+  if (!activeSkinPath) return;
+  const elements = document.querySelectorAll(
+    ".captured-pieces [data-piece], [class*=\"captured\"] [data-piece], .captured-pieces .piece, [class*=\"captured\"] .piece"
+  );
+  elements.forEach((el) => {
+    let piece = el.dataset?.piece;
+    if (!piece) {
+      const classMatch = PIECES.find((code) => el.classList.contains(code));
+      piece = classMatch || null;
+    }
+    if (!piece) return;
+    const url = chrome.runtime.getURL(`${activeSkinPath}/${piece}.png`);
+    if (el.tagName === "IMG") {
+      if (el.src !== url) el.src = url;
+    } else {
+      el.style.backgroundImage = `url("${url}")`;
+      el.style.backgroundSize = "contain";
+      el.style.backgroundRepeat = "no-repeat";
+      el.style.backgroundPosition = "center";
+    }
+  });
 }
 
 function applyEffect(effectName, targetName) {
@@ -145,6 +184,7 @@ function applyEffect(effectName, targetName) {
     ${glowTargetSelector} {
       filter: var(--piece-filter, none);
       transition: filter 0.2s ease;
+      animation: glowPulse 3s ease-in-out infinite;
     }
 
     .captured .piece,
@@ -357,13 +397,16 @@ function disableSkins() {
   lastAppliedTarget = null;
 }
 
-chrome.storage.sync.get(["enabled", "activeSkin", "activeEffect", "activeTarget", "activeSet"], (data) => {
+chrome.storage.sync.get(
+  ["enabled", "activeSkin", "activeEffect", "activeTarget", "activeSkinPath", "activeSet"],
+  (data) => {
   skinsEnabled = !!data.enabled;
   if (!skinsEnabled) return;
 
   let activeSkin = data.activeSkin;
   let activeEffect = data.activeEffect;
   const activeTarget = data.activeTarget || "all";
+  const skinPath = data.activeSkinPath;
 
   if (data.activeSet && !activeSkin && !activeEffect) {
     if (SKIN_DEFINITIONS[data.activeSet]) {
@@ -373,7 +416,7 @@ chrome.storage.sync.get(["enabled", "activeSkin", "activeEffect", "activeTarget"
     }
   }
 
-  applySkin(activeSkin || "set2");
+  applySkin(activeSkin || "set2", skinPath || null);
   applyEffect(activeEffect || "native-ember", activeTarget);
 });
 
@@ -385,8 +428,8 @@ chrome.storage.onChanged.addListener((changes) => {
 
   if (changes.enabled && changes.enabled.newValue === true) {
     skinsEnabled = true;
-    chrome.storage.sync.get(["activeSkin", "activeEffect", "activeTarget"], (data) => {
-      applySkin(data.activeSkin || "set2");
+    chrome.storage.sync.get(["activeSkin", "activeEffect", "activeTarget", "activeSkinPath"], (data) => {
+      applySkin(data.activeSkin || "set2", data.activeSkinPath || null);
       applyEffect(data.activeEffect || "native-ember", data.activeTarget || "all");
     });
   }
@@ -394,7 +437,9 @@ chrome.storage.onChanged.addListener((changes) => {
   if (changes.activeSkin && changes.activeSkin.newValue) {
     chrome.storage.sync.get("enabled", (data) => {
       if (data.enabled) {
-        applySkin(changes.activeSkin.newValue);
+        chrome.storage.sync.get("activeSkinPath", (stored) => {
+          applySkin(changes.activeSkin.newValue, stored.activeSkinPath || null);
+        });
       }
     });
   }
@@ -405,6 +450,14 @@ chrome.storage.onChanged.addListener((changes) => {
         chrome.storage.sync.get("activeTarget", (stored) => {
           applyEffect(changes.activeEffect.newValue, stored.activeTarget || "all");
         });
+      }
+    });
+  }
+
+  if (changes.activeSkinPath && changes.activeSkinPath.newValue) {
+    chrome.storage.sync.get(["enabled", "activeSkin"], (data) => {
+      if (data.enabled) {
+        applySkin(data.activeSkin || "set2", changes.activeSkinPath.newValue || null);
       }
     });
   }
