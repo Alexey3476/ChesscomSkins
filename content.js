@@ -172,7 +172,16 @@ function applyEffect(effectName, targetName) {
   const ringAnimation = definition.ringAnimation || "ringPulse 1.2s ease-in-out infinite";
 
   const glowTargets = targetName === "royal"
-    ? [".piece.wk", ".piece.wq", ".piece.bk", ".piece.bq"]
+    ? [
+      ".piece.wk",
+      ".piece.wq",
+      ".piece.bk",
+      ".piece.bq",
+      ".piece[data-piece=\"wk\"]",
+      ".piece[data-piece=\"wq\"]",
+      ".piece[data-piece=\"bk\"]",
+      ".piece[data-piece=\"bq\"]"
+    ]
     : [".piece", ".promotion-piece"];
   const glowTargetSelector = glowTargets.join(", ");
   const glowTargetSelected = glowTargets.map((target) => `.selected ${target}`).join(", ");
@@ -357,11 +366,11 @@ function applyEffect(effectName, targetName) {
     ${glowTargetMove},
     ${glowTargetHint},
     ${glowTargetHighlight} {
-      animation: ${ringAnimation};
+      animation: ${ringAnimation}, glowPulse 2.6s ease-in-out infinite;
     }
 
     ${glowTargetCheck} {
-      animation: checkPulse 1s ease-in-out infinite;
+      animation: checkPulse 1s ease-in-out infinite, glowPulse 2.2s ease-in-out infinite;
       --ring-color: rgba(255,70,70,0.9);
     }
 
