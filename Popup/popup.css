@@ -2,44 +2,47 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 body {
-  width: 360px;
-  padding: 20px;
+  width: 430px;
+  padding: 24px;
   font-family: Inter, sans-serif;
-  background: #f6d9c9;
+  background: #f6dccd;
+  color: #2b1e1f;
 }
 
 .top-box {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 12px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #fff2e9);
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: #fff4ee;
   color: #202020;
-  box-shadow: inset 0 0 14px rgba(255,255,255,0.2);
+  box-shadow: 0 6px 18px rgba(124, 21, 45, 0.08);
 }
 
 h1 {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
+  margin: 0;
 }
 
 h2 {
   margin-top: 16px;
-  font-size: 16px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
+  color: #2b1e1f;
 }
 
 .preview-window {
   margin-top: 12px;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .set {
-  padding: 12px;
-  border-radius: 18px;
+  padding: 14px;
+  border-radius: 20px;
   background: transparent;
   transition: 0.3s;
   display: flex;
@@ -56,6 +59,10 @@ h2 {
   box-shadow: inset 0 0 18px rgba(255,255,255,0.15);
 }
 
+.set.effect {
+  display: none;
+}
+
 .set.disabled {
   opacity: 0.5;
 }
@@ -68,9 +75,9 @@ h2 {
 button {
   width: 100%;
   padding: 12px;
-  border-radius: 14px;
+  border-radius: 16px;
   border: none;
-  font-size: 16px;
+  font-size: 15px;
   cursor: pointer;
   transition: 0.2s;
 }
@@ -94,8 +101,8 @@ button:active {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 8px;
-  padding: 10px;
-  border-radius: 12px;
+  padding: 12px;
+  border-radius: 14px;
   background: inherit;
   overflow: hidden;
 }
@@ -170,22 +177,22 @@ button:active {
 /* Toggle */
 .switch {
   position: relative;
-  width: 46px;
-  height: 26px;
+  width: 52px;
+  height: 28px;
 }
 .switch input { display:none; }
 .slider {
   position: absolute;
   inset: 0;
-  background: #ccc;
+  background: #e6c6ba;
   border-radius: 20px;
   transition: .3s;
 }
 .slider:before {
   content:"";
   position:absolute;
-  height:20px;
-  width:20px;
+  height:22px;
+  width:22px;
   left:3px;
   bottom:3px;
   background:white;
@@ -196,5 +203,82 @@ input:checked + .slider {
   background:#7c152d;
 }
 input:checked + .slider:before {
-  transform:translateX(20px);
+  transform:translateX(24px);
+}
+
+.crown-row {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.45);
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.crown-icon {
+  width: 52px;
+  height: 46px;
+  padding: 6px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 2px solid transparent;
+  display: grid;
+  place-items: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.crown-icon img {
+  width: 28px;
+}
+
+.crown-icon.active {
+  border-color: rgba(124, 21, 45, 0.5);
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: 0 8px 16px rgba(124, 21, 45, 0.15);
+}
+
+.crown-icon:hover {
+  transform: translateY(-2px);
+}
+
+.crown-1 img { filter: drop-shadow(0 0 6px rgba(255, 150, 90, 0.8)); }
+.crown-2 img { filter: drop-shadow(0 0 6px rgba(120, 190, 255, 0.9)); }
+.crown-3 img { filter: drop-shadow(0 0 6px rgba(220, 140, 255, 0.9)); }
+.crown-4 img { filter: drop-shadow(0 0 6px rgba(140, 255, 200, 0.8)); }
+.crown-5 img { filter: drop-shadow(0 0 6px rgba(255, 220, 120, 0.9)); }
+
+.glow-target {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: #fff4ee;
+  box-shadow: 0 6px 18px rgba(124, 21, 45, 0.08);
+}
+
+.glow-target p {
+  margin: 0 0 10px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.glow-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.glow-button {
+  background: #ffffff;
+  border: 1px solid #f0d1c5;
+  font-weight: 600;
+  color: #2b1e1f;
+  padding: 10px 12px;
+  border-radius: 999px;
+}
+
+.glow-button.active {
+  background: #7c152d;
+  color: #f6d9c9;
+  border-color: transparent;
 }
